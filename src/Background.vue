@@ -3,7 +3,6 @@
 </script>
 
 <template>
-  <p>Bonjour</p>
 </template>
 
 <style>

@@ -1,17 +1,14 @@
 <template>
   <div>
-    <h1>App</h1>
-    <button @click="show = !show">
-      {{ show ? 'Fermer' : 'Ouvrir' }} Background
-    </button>
-
-    <Background v-if="show" />
+    <background show={show}></background>
+    <Arcade show={show}> </Arcade>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import Background from'./Background.vue'
+import Background from "@/Background.vue";
+import Arcade from'./Arcade.vue'
 
 const show = ref(false)
 </script>

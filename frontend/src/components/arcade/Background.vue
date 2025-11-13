@@ -107,12 +107,6 @@ body::after {
   }
 }
 
-/* Fallback for browsers without @property */
-@supports not (background: paint(something)) {
-  :root {
-    --outrun: 0;
-  }
-}
 
 /* ---------- Outrun background ---------- */
 html {
@@ -120,8 +114,8 @@ html {
 }
 
 html::before {
-  --mtn2: url(../../../../img/bas-montagne.png);
-  --mtn: url(../../../../img/montagne.png);
+  --mtn2: url(../../../img/bas-montagne.png);
+  --mtn: url(../../../img/montagne.png);
 
   content: "";
   position: fixed;

@@ -120,8 +120,8 @@ html {
 }
 
 html::before {
-  --mtn2: url(img/bas-montagne.png);
-  --mtn: url(img/montagne.png);
+  --mtn2: url(../../../../img/bas-montagne.png);
+  --mtn: url(../../../../img/montagne.png);
 
   content: "";
   position: fixed;

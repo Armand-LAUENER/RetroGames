@@ -158,7 +158,7 @@ export const startGame = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Start game error:', error);
+    console.error('❌ Start games error:', error);
     res.status(500).json({ message: 'Erreur lors du démarrage de la partie' });
   }
 };

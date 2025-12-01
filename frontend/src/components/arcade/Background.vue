@@ -1,17 +1,14 @@
 <script setup lang="ts">
-// Vous pouvez ajouter votre logique TypeScript ici
+// Composant de décor uniquement
 </script>
 
 <template>
-</template>
+  </template>
 
 <style>
-/* Suppression de "scoped" car les styles affectent html/body globalement */
-
 /* =========================================================
-   Scanlines CSS + Outrun background
-   Author: you
-   Version: 1.1
+   Background Only (Outrun Style)
+   Scanlines removed from here to be managed by ArcadeGame.vue
    ========================================================= */
 
 :root {
@@ -23,94 +20,23 @@
   --c5: hsl(0, 67%, 55%);
   --c6: hsl(213, 96%, 11%);
   --c2hsl: 319, 100%, 60%;
-
-  /* Variables scanlines */
-  --scan-width: 2px;
-  --scan-color: rgba(0, 0, 0, 0.35);
-  --scan-opacity: 0.8;
-  --scan-fps: 60;
-  --scan-z-index: 9999;
 }
 
-/* @property pour l'animation outrun */
 @property --outrun {
   syntax: "<number>";
   initial-value: 0;
   inherits: false;
 }
 
-/* Animations */
-@keyframes scanline-move {
-  0%   { transform: translate3d(0, 500vh, 0); }
-  100% { transform: translate3d(0, -500vh, 0); }
-}
-
-@keyframes scanlines-flicker {
-  0%   { background-position: 100%; }
-  100% { background-position: 0 80%; }
-}
-
 @keyframes outrun {
   to { --outrun: 1; }
 }
 
-/* Application GLOBALE */
-html, body {
-  height: 100%;
-}
-
-body {
-  position: relative;
-}
-
-/* Barre mobile (highlight) */
-body::before {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: var(--scan-width);
-  background: var(--scan-color);
-  opacity: var(--scan-opacity);
-  animation: scanline-move 6s linear infinite;
-  z-index: calc(var(--scan-z-index) + 1);
-  pointer-events: none;
-  will-change: transform;
-}
-
-/* Trame statique (lignes) */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: var(--scan-z-index);
-  background: linear-gradient(to bottom, transparent 50%, var(--scan-color) 51%);
-  background-size: 100% calc(var(--scan-width) * 2);
-  animation: scanlines-flicker 1s steps(var(--scan-fps)) infinite;
-  pointer-events: none;
-  will-change: background-position;
-}
-
-/* Accessibilité */
-@media (prefers-reduced-motion: reduce) {
-  body::before,
-  body::after {
-    animation: none !important;
-  }
-}
-
-/* Schéma sombre/clair auto */
-@media (prefers-color-scheme: light) {
-  :root {
-    --scan-color: rgba(0, 0, 0, 0.35);
-  }
-}
-
-
-/* ---------- Outrun background ---------- */
+/* Le fond d'écran s'applique à HTML pour couvrir toute la fenêtre */
 html {
   height: 100vh;
+  /* Fond noir par défaut pour éviter l'écran blanc si l'image charge mal */
+  background-color: #000;
 }
 
 html::before {
@@ -136,7 +62,7 @@ html::before {
   --distance: 0.5%;
   --hor: 60%;
 
-  /* precomputed lines */
+  /* Lignes de perspective calculées */
   --l0: calc(var(--hor) + 0 * 0 * var(--distance) + (((0 + 1) * (0 + 1) * var(--distance) - 0 * 0 * var(--distance)) * var(--pos)));
   --l1: calc(var(--hor) + 1 * 1 * var(--distance) + (((1 + 1) * (1 + 1) * var(--distance) - 1 * 1 * var(--distance)) * var(--pos)));
   --l2: calc(var(--hor) + 2 * 2 * var(--distance) + (((2 + 1) * (2 + 1) * var(--distance) - 2 * 2 * var(--distance)) * var(--pos)));

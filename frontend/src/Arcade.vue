@@ -407,7 +407,7 @@ export default {
       try {
         await api.startGame();
 
-        console.log('Starting game for:', this.currentUser.pseudo);
+        console.log('Starting games for:', this.currentUser.pseudo);
         alert(`🎮 Starting game for ${this.currentUser.pseudo}!\n\nGood luck!`);
 
         // Recharger les données utilisateur
@@ -419,7 +419,7 @@ export default {
         await this.loadAccounts();
         this.playSound();
       } catch (error) {
-        console.error('Error starting game:', error);
+        console.error('Error starting games:', error);
       }
     },
 

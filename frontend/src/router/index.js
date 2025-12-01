@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
-import Background from "@/components/arcade/Background.vue";
+import GameView from '@/views/GameView.vue'
 
 const routes = [
   {
@@ -8,12 +8,13 @@ const routes = [
     name: 'Home',
     component: HomeView
   },
-  // Vous pouvez ajouter d'autres routes plus tard
-  // {
-  //   path: '/game',
-  //   name: 'Game',
-  //   component: () => import('@/views/GameView.vue')
-  // }
+  {
+    // On ajoute le paramètre dynamique :gameId
+    path: '/games/:gameId',
+    name: 'Game',
+    component: GameView,
+    props: true // Permet de passer gameId comme une prop
+  }
 ]
 
 const router = createRouter({

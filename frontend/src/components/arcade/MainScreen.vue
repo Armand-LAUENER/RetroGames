@@ -1,220 +1,318 @@
 <template>
   <div class="main-screen">
-    <div class="user-card pixel-border">
-      <div class="user-header">
-        <div class="user-avatar" :style="{ backgroundColor: user.color }">
+
+    <header class="hub-header">
+      <div class="player-badge pixel-border">
+        <div class="avatar-mini" :style="{ backgroundColor: user.color }">
           {{ user.pseudo.substring(0, 2).toUpperCase() }}
         </div>
-        <div class="user-info">
-          <h2 class="user-name">{{ user.pseudo }}</h2>
-          <p class="user-email">{{ user.email }}</p>
-          <p class="user-stats">Member since: {{ formatDate(user.createdAt) }}</p>
+        <div class="player-details">
+          <span class="pseudo">{{ user.pseudo }}</span>
+          <span class="score">🏆 {{ formatScore(user.highScore) }} PTS</span>
         </div>
       </div>
 
-      <div class="user-actions">
-        <button @click="$emit('start-game')" class="pixel-button start-game-btn">
-          🎮 START GAME
-        </button>
+      <div class="header-actions">
+        <button @click="$emit('show-stats')" class="icon-btn" title="Stats">📊</button>
+        <button @click="$emit('show-settings')" class="icon-btn" title="Settings">⚙️</button>
+        <button @click="$emit('logout')" class="logout-btn pixel-button-small">EXIT ✕</button>
+      </div>
+    </header>
 
-        <div class="secondary-actions">
-          <button @click="$emit('show-stats')" class="pixel-button-small">
-            📊 STATS
-          </button>
-          <button @click="$emit('show-settings')" class="pixel-button-small">
-            ⚙️ SETTINGS
-          </button>
+    <div class="arcade-hub">
+
+      <div class="game-wheel-container">
+        <div class="wheel-title">SELECT GAME</div>
+        <div class="game-wheel" ref="wheel">
+          <div
+            v-for="(game, index) in games"
+            :key="game.id"
+            class="game-item pixel-border"
+            :class="{ active: selectedGameId === game.id }"
+            @click="selectGame(game.id)"
+            :ref="'gameItem-' + index"
+          >
+            <div class="game-icon">{{ game.icon }}</div>
+            <div class="game-label">{{ game.title }}</div>
+            <div class="selection-arrow" v-if="selectedGameId === game.id">◄</div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="controls">
-      <button @click="$emit('logout')" class="back-button pixel-button-small">
-        ← LOGOUT
-      </button>
-    </div>
+      <div class="game-preview-container pixel-border">
+        <div class="preview-header">
+          <h2 class="preview-title" :style="{ color: selectedGame.color }">
+            {{ selectedGame.title }}
+          </h2>
+          <span class="genre-tag">{{ selectedGame.genre }}</span>
+        </div>
 
-    <div class="recent-games pixel-border">
-      <h3>RECENT GAMES</h3>
-      <div class="no-games">
-        No games played yet. Start your first game!
+        <div class="preview-content">
+          <div class="media-box" :style="{ borderColor: selectedGame.color }">
+            <div class="media-placeholder">
+              <span class="big-icon">{{ selectedGame.icon }}</span>
+              <p>PREVIEW</p>
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <div class="game-info">
+              <div class="description pixel-text">{{ selectedGame.description }}</div>
+              <div class="controls-box">
+                <h4>CONTROLS</h4>
+                <div class="control-row" v-for="(action, key) in selectedGame.controls" :key="key">
+                  <span class="key-badge">{{ key }}</span>
+                  <span class="action-text">{{ action }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="game-leaderboard">
+              <h4>GLOBAL RANKING</h4>
+              <div v-if="loadingLeaderboard" class="loading-text">Loading scores...</div>
+              <ul v-else class="leaderboard-list">
+                <li v-for="(player, index) in topPlayers" :key="player.id">
+                  <span class="rank" :class="{'gold': index===0, 'silver': index===1, 'bronze': index===2}">#{{ index + 1 }}</span>
+                  <span class="name" :style="{ color: player.color }">{{ player.pseudo }}</span>
+                  <span class="points">{{ formatScore(player.highScore) }} PTS</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="play-action">
+          <button
+            @click="handlePlay"
+            class="pixel-button play-btn"
+            :style="{ backgroundColor: selectedGame.color }"
+          >
+            INSERT COIN & PLAY
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import api from '../../services/api.js'
+
 export default {
   name: 'MainScreen',
   props: {
-    user: {
-      type: Object,
-      required: true
+    user: { type: Object, required: true },
+    settings: { type: Object, default: () => ({ controls: 'arrows' }) }
+  },
+  emits: ['start-game', 'show-stats', 'show-settings', 'logout', 'open-new-page'],
+  data() {
+    return {
+      selectedGameId: 'snake',
+      loadingLeaderboard: true,
+      leaderboardData: [],
+      games: [
+        {
+          id: 'snake', title: 'NEON SNAKE', genre: 'Arcade', icon: '🐍', color: '#4ECDC4',
+          description: 'Eat pixels, grow longer, avoid walls!',
+          controls: { 'ARROWS': 'Move', 'SPACE': 'Boost' }
+        },
+        {
+          id: 'tetris', title: 'BLOCK MASTER', genre: 'Puzzle', icon: '🧱', color: '#FFE66D',
+          description: 'Stack blocks, clear lines.',
+          controls: { '↑': 'Rotate', '← →': 'Move', '↓': 'Drop' }
+        },
+        {
+          id: 'space', title: 'SPACE DEFENDER', genre: 'Shooter', icon: '🚀', color: '#FF6B6B',
+          description: 'Defend earth against aliens.',
+          controls: { '← →': 'Move', 'SPACE': 'Shoot' }
+        },
+        {
+          id: 'pong', title: 'CYBER PONG', genre: 'Sports', icon: '🏓', color: '#AA96DA',
+          description: 'Defeat the AI in tennis.',
+          controls: { 'W / S': 'Up / Down' }
+        }
+      ]
     }
   },
-  emits: ['start-game', 'show-stats', 'show-settings', 'logout'],
+  computed: {
+    selectedGame() {
+      return this.games.find(g => g.id === this.selectedGameId) || this.games[0]
+    },
+    topPlayers() {
+      // Top 5 joueurs
+      return this.leaderboardData.slice(0, 5)
+    }
+  },
+  async mounted() {
+    await this.fetchLeaderboard()
+    window.addEventListener('keydown', this.handleKeydown)
+  },
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.handleKeydown)
+  },
   methods: {
-    formatDate(dateString) {
-      const date = new Date(dateString)
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
+    // Formatage des nombres (ex: 10000 -> 10 000)
+    formatScore(score) {
+      return (score || 0).toLocaleString('fr-FR')
+    },
+    async fetchLeaderboard() {
+      try {
+        const response = await api.getAllUsers()
+        if (response.users) {
+          this.leaderboardData = response.users
+        }
+      } catch (error) {
+        console.error("Error fetching leaderboard", error)
+      } finally {
+        this.loadingLeaderboard = false
+      }
+    },
+    selectGame(id) {
+      this.selectedGameId = id
+      this.playSound()
+    },
+    handlePlay() {
+      // Redirection dynamique via le routeur (configuré précédemment)
+      this.$router.push({ name: 'Game', params: { gameId: this.selectedGameId } })
+    },
+    handleKeydown(e) {
+      const controls = this.settings.controls
+      let action = null
+
+      if (controls === 'arrows') {
+        if (e.key === 'ArrowUp') action = 'up'
+        if (e.key === 'ArrowDown') action = 'down'
+        if (e.key === 'Enter') action = 'select'
+      } else if (controls === 'zqsd') {
+        if (e.key === 'z') action = 'up'
+        if (e.key === 's') action = 'down'
+        if (e.key === 'Enter' || e.key === ' ') action = 'select'
+      } else if (controls === 'wasd') {
+        if (e.key === 'w') action = 'up'
+        if (e.key === 's') action = 'down'
+        if (e.key === 'Enter' || e.key === ' ') action = 'select'
+      }
+
+      if (action === 'up') this.navigateWheel(-1)
+      if (action === 'down') this.navigateWheel(1)
+      if (action === 'select') this.handlePlay()
+    },
+    navigateWheel(direction) {
+      const currentIndex = this.games.findIndex(g => g.id === this.selectedGameId)
+      let newIndex = currentIndex + direction
+      if (newIndex < 0) newIndex = this.games.length - 1
+      if (newIndex >= this.games.length) newIndex = 0
+      this.selectGame(this.games[newIndex].id)
+    },
+    playSound() {
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        oscillator.frequency.value = 400
+        oscillator.type = 'sine'
+        gainNode.gain.value = 0.05
+        oscillator.start()
+        oscillator.stop(audioContext.currentTime + 0.05)
+      } catch (e) {}
     }
   }
 }
 </script>
 
 <style scoped>
+/* Layout Global */
 .main-screen {
-  min-height: 100vh;
-  padding: 40px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  height: 100vh; display: flex; flex-direction: column; padding: 20px; overflow: hidden;
 }
 
-.user-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  padding: 40px;
-  max-width: 600px;
-  width: 100%;
-  margin-bottom: 30px;
-}
+/* Header */
+.hub-header { display: flex; justify-content: space-between; align-items: center; height: 80px; margin-bottom: 20px; }
+.player-badge { display: flex; align-items: center; gap: 15px; background: rgba(0, 0, 0, 0.6); padding: 10px 20px; border-radius: 4px; }
+.avatar-mini { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 2px solid white; }
+.player-details { display: flex; flex-direction: column; gap: 5px; }
+.pseudo { color: #FFE66D; font-size: 0.8rem; }
+.score { color: #95E1D3; font-size: 0.6rem; }
+.header-actions { display: flex; gap: 10px; }
+.icon-btn { background: rgba(255, 255, 255, 0.1); border: 2px solid white; color: white; width: 40px; height: 40px; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; }
+.icon-btn:hover { background: rgba(255, 255, 255, 0.3); }
+.logout-btn { background: #FF6B6B; font-size: 0.7rem !important; padding: 10px 15px !important; }
 
-.user-header {
-  display: flex;
-  gap: 30px;
-  margin-bottom: 40px;
-  align-items: center;
-}
+/* Arcade Hub */
+.arcade-hub { display: flex; gap: 30px; flex: 1; height: calc(100% - 100px); }
 
-.user-avatar {
-  width: 120px;
-  height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  border: 4px solid #000;
-  box-shadow:
-    inset 0 0 0 4px rgba(255, 255, 255, 0.3),
-    -4px 4px 0 rgba(0, 0, 0, 0.5);
-  flex-shrink: 0;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-}
-
-.user-info {
+/* Roue */
+.game-wheel-container { flex: 0 0 300px; display: flex; flex-direction: column; }
+.wheel-title { text-align: center; color: #95E1D3; margin-bottom: 10px; font-size: 0.8rem; }
+.game-wheel {
   flex: 1;
+  display: flex; flex-direction: column; gap: 15px;
+  padding: 15px 20px;
+  overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: #FFE66D rgba(0,0,0,0.3);
 }
 
-.user-name {
-  font-size: 1.5rem;
-  margin-bottom: 15px;
-  color: #FFE66D;
-  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+.game-item {
+  background: rgba(0, 0, 0, 0.5); padding: 20px; cursor: pointer;
+  display: flex; align-items: center; gap: 15px; transition: all 0.3s;
+  opacity: 0.6; position: relative; transform: scale(0.95);
+  backface-visibility: hidden;
 }
-
-.user-email {
-  font-size: 0.7rem;
-  color: #95E1D3;
-  margin-bottom: 10px;
+.game-item:hover { opacity: 0.8; transform: scale(0.98); }
+.game-item.active {
+  opacity: 1; background: rgba(255, 255, 255, 0.15); border-color: #FFE66D;
+  transform: scale(1.05) translateX(5px);
+  z-index: 2; box-shadow: -5px 5px 0 rgba(0,0,0,0.5);
 }
+.game-icon { font-size: 1.5rem; }
+.game-label { font-size: 0.8rem; color: white; flex: 1; }
+.selection-arrow { color: #FFE66D; animation: blink 1s infinite; }
 
-.user-stats {
-  font-size: 0.6rem;
-  color: #95E1D3;
-  opacity: 0.7;
+/* Preview */
+.game-preview-container {
+  flex: 1; background: rgba(22, 33, 62, 0.9); backdrop-filter: blur(10px);
+  padding: 30px; display: flex; flex-direction: column; gap: 20px; position: relative;
 }
+.preview-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 15px; }
+.preview-title { font-size: 2rem; text-shadow: 3px 3px 0 rgba(0,0,0,0.8); margin: 0; }
+.genre-tag { background: #333; padding: 5px 10px; font-size: 0.6rem; color: #ccc; border: 1px solid #666; }
+.preview-content { display: flex; gap: 20px; flex: 1; overflow: hidden; }
+.media-box { flex: 1; border: 4px solid; background: black; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); min-height: 200px; }
+.media-placeholder { text-align: center; color: rgba(255,255,255,0.3); }
+.big-icon { font-size: 5rem; display: block; margin-bottom: 10px; }
+.info-grid { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.game-info { flex: 1; overflow-y: auto; }
+.description { font-size: 0.7rem; line-height: 1.6; margin-bottom: 20px; color: #ddd; }
+.controls-box h4, .game-leaderboard h4 { color: #FFE66D; font-size: 0.7rem; margin-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 5px; }
+.control-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.6rem; }
+.key-badge { background: #333; color: white; padding: 2px 6px; border: 1px solid #fff; border-radius: 2px; }
+.action-text { color: #95E1D3; }
 
-.user-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
+/* Leaderboard */
+.game-leaderboard { background: rgba(0,0,0,0.3); padding: 15px; border: 2px solid rgba(255,255,255,0.1); }
+.leaderboard-list { list-style: none; font-size: 0.6rem; }
+.leaderboard-list li { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dotted rgba(255,255,255,0.1); }
+.rank { color: #FFE66D; width: 30px; }
+.rank.gold { color: #FFD700; text-shadow: 0 0 5px #FFD700; }
+.rank.silver { color: #C0C0C0; }
+.rank.bronze { color: #CD7F32; }
+.name { color: white; flex: 1; }
+/* Style des points */
+.points { color: #FF6B6B; font-weight: bold; }
+.loading-text { text-align: center; font-size: 0.6rem; color: #999; animation: blink 1s infinite; }
 
-.start-game-btn {
-  font-size: 1.3rem;
-  padding: 25px;
-  background: #4ECDC4;
-  animation: pulse 2s ease-in-out infinite;
-}
+.play-action { margin-top: auto; }
+.play-btn { font-size: 1.2rem; padding: 20px; color: #000; font-weight: bold; animation: pulse 2s infinite; text-shadow: none; }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+@keyframes blink { 50% { opacity: 0; } }
 
-.start-game-btn:hover {
-  background: #45b8b0;
-}
-
-.secondary-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: space-between;
-}
-
-.recent-games {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  padding: 30px;
-  max-width: 600px;
-  width: 100%;
-  margin-top: 20px;
-}
-
-.recent-games h3 {
-  font-size: 1rem;
-  margin-bottom: 20px;
-  text-align: center;
-  color: #FFE66D;
-}
-
-.no-games {
-  text-align: center;
-  font-size: 0.7rem;
-  color: #95E1D3;
-  padding: 20px;
-  opacity: 0.7;
-}
-
-.controls {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.back-button {
-  background: #F38181;
-}
-
-.back-button:hover {
-  background: #e57373;
-}
-
-@media (max-width: 768px) {
-  .user-header {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .user-name {
-    font-size: 1.2rem;
-  }
-
-  .secondary-actions {
-    flex-direction: column;
-  }
+@media (max-width: 900px) {
+  .arcade-hub { flex-direction: column; }
+  .game-wheel-container { flex: 0 0 auto; height: 150px; }
+  .preview-content { flex-direction: column; }
+  .media-box { min-height: 150px; }
 }
 </style>

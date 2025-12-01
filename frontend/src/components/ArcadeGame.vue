@@ -1,16 +1,12 @@
 <template>
+  <div class="arcade-container" :class="{ 'scanlines-enabled': settings.scanlines }">
 
-  <div class="arcade-container">
+    <Background />
 
-    <!-- Écran de démarrage -->
     <transition name="fade">
-      <StartScreen
-        v-if="currentScreen === 'start'"
-        @start="goToLogin"
-      />
+      <StartScreen v-if="currentScreen === 'start'" @start="goToLogin" />
     </transition>
 
-    <!-- Écran de connexion -->
     <transition name="slide">
       <LoginScreen
         v-if="currentScreen === 'login'"
@@ -22,35 +18,33 @@
       />
     </transition>
 
-    <!-- Écran principal -->
     <transition name="slide">
       <MainScreen
         v-if="currentScreen === 'main'"
         :user="currentUser"
+        :settings="settings"
         @start-game="startGame"
         @show-stats="showStats"
-        @show-settings="showSettings"
+        @show-settings="showSettingsModal = true"
         @logout="logout"
+        @open-new-page="$router.push('/games')"
       />
     </transition>
 
-    <!-- Modal de connexion -->
     <transition name="modal-fade">
-      <LoginModal
-        v-if="showLoginForm"
-        :error="loginError"
-        @close="closeLoginForm"
-        @submit="loginWithPassword"
-      />
+      <LoginModal v-if="showLoginForm" :error="loginError" @close="closeLoginForm" @submit="loginWithPassword" />
     </transition>
 
-    <!-- Modal de création de compte -->
     <transition name="modal-fade">
-      <CreateAccountModal
-        v-if="showCreateForm"
-        :error="createError"
-        @close="closeCreateForm"
-        @submit="createAccount"
+      <CreateAccountModal v-if="showCreateForm" :error="createError" @close="closeCreateForm" @submit="createAccount" />
+    </transition>
+
+    <transition name="modal-fade">
+      <SettingsModal
+        v-if="showSettingsModal"
+        :current-settings="settings"
+        @update-settings="updateSettings"
+        @close="showSettingsModal = false"
       />
     </transition>
   </div>
@@ -63,17 +57,15 @@ import LoginScreen from './arcade/LoginScreen.vue'
 import MainScreen from './arcade/MainScreen.vue'
 import LoginModal from './arcade/LoginModal.vue'
 import CreateAccountModal from './arcade/CreateAccountModal.vue'
-import Background from "@/components/arcade/Background.vue";
+import SettingsModal from './arcade/SettingsModal.vue'
+import Background from '@/components/arcade/Background.vue'
 
 export default {
   name: 'ArcadeGame',
   components: {
     Background,
-    StartScreen,
-    LoginScreen,
-    MainScreen,
-    LoginModal,
-    CreateAccountModal
+    StartScreen, LoginScreen, MainScreen,
+    LoginModal, CreateAccountModal, SettingsModal
   },
   data() {
     return {
@@ -81,186 +73,81 @@ export default {
       currentUser: null,
       showLoginForm: false,
       showCreateForm: false,
+      showSettingsModal: false,
       loginError: '',
       createError: '',
       accounts: [],
-      colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8E6CF']
+      colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3'],
+      settings: {
+        scanlines: true,
+        controls: 'arrows'
+      }
     }
   },
   async mounted() {
     await this.loadAccounts()
     await this.checkAutoLogin()
+    const savedSettings = localStorage.getItem('arcade_settings')
+    if (savedSettings) {
+      this.settings = JSON.parse(savedSettings)
+    }
   },
   methods: {
-    goToLogin() {
-      this.currentScreen = 'login'
-      this.playSound()
+    updateSettings(newSettings) {
+      this.settings = newSettings
+      localStorage.setItem('arcade_settings', JSON.stringify(newSettings))
     },
-
+    goToLogin() { this.currentScreen = 'login'; this.playSound() },
     async loadAccounts() {
-      try {
-        const response = await api.getAllUsers()
-        this.accounts = response.users
-      } catch (error) {
-        console.error('Error loading accounts:', error)
-      }
+      try { const response = await api.getAllUsers(); this.accounts = response.users }
+      catch (error) { console.error(error) }
     },
-
     async checkAutoLogin() {
-      try {
-        const response = await api.getProfile()
-        if (response.success) {
-          this.currentUser = response.user
-          this.currentScreen = 'main'
-        }
-      } catch (error) {
-        api.clearToken()
-      }
+      try { const response = await api.getProfile(); if (response.user) { this.currentUser = response.user; this.currentScreen = 'main' } }
+      catch (error) { api.clearToken() }
     },
-
-    closeCreateForm() {
-      this.showCreateForm = false
-      this.createError = ''
-    },
-
-    closeLoginForm() {
-      this.showLoginForm = false
-      this.loginError = ''
-    },
-
+    closeCreateForm() { this.showCreateForm = false; this.createError = '' },
+    closeLoginForm() { this.showLoginForm = false; this.loginError = '' },
     async createAccount(data) {
-      this.createError = ''
-
-      if (data.password.length < 6) {
-        this.createError = 'Password must be at least 6 characters!'
-        return
-      }
-
-      if (data.password !== data.confirmPassword) {
-        this.createError = 'Passwords do not match!'
-        return
-      }
-
-      try {
-        const response = await api.register({
-          email: data.email,
-          pseudo: data.pseudo,
-          password: data.password,
-          color: this.colors[Math.floor(Math.random() * this.colors.length)]
-        })
-
-        if (response.success) {
-          this.currentUser = response.user
-          this.closeCreateForm()
-          this.currentScreen = 'main'
-          this.playSound()
-
-          setTimeout(() => {
-            alert(`🎉 Welcome ${this.currentUser.pseudo}!\n\nYour account has been created successfully!`)
-          }, 500)
-
-          await this.loadAccounts()
-        }
-      } catch (error) {
-        this.createError = error.message || 'Failed to create account'
-      }
+       try {
+        const response = await api.register({ email: data.email, pseudo: data.pseudo, password: data.password, color: this.colors[Math.floor(Math.random() * this.colors.length)] })
+        if (response.user) { this.currentUser = response.user; this.closeCreateForm(); this.currentScreen = 'main'; this.playSound(); await this.loadAccounts() }
+      } catch (error) { this.createError = error.message || 'Failed' }
     },
-
     async loginWithPassword(data) {
-      this.loginError = ''
-
       try {
-        const response = await api.login({
-          pseudo: data.pseudo,
-          password: data.password
-        })
-
-        if (response.success) {
-          this.currentUser = response.user
-          this.closeLoginForm()
-          this.currentScreen = 'main'
-          this.playSound()
-        }
-      } catch (error) {
-        this.loginError = error.message || 'Invalid credentials'
-      }
+        const response = await api.login({ pseudo: data.pseudo, password: data.password })
+        if (response.user) { this.currentUser = response.user; this.closeLoginForm(); this.currentScreen = 'main'; this.playSound() }
+      } catch (error) { this.loginError = error.message || 'Invalid credentials' }
     },
-
     async quickLogin(account) {
       const password = prompt(`🔒 Enter password for ${account.pseudo}:`)
-
-      if (password === null) return
-
+      if (!password) return
       try {
-        const response = await api.login({
-          pseudo: account.pseudo,
-          password: password
-        })
-
-        if (response.success) {
-          this.currentUser = response.user
-          this.currentScreen = 'main'
-          this.playSound()
-        }
-      } catch (error) {
-        alert('❌ Invalid password!')
-      }
+        const response = await api.login({ pseudo: account.pseudo, password })
+        if (response.user) { this.currentUser = response.user; this.currentScreen = 'main'; this.playSound() }
+      } catch (error) { alert('❌ Invalid password!') }
     },
-
     logout() {
-      if (confirm(`Logout from ${this.currentUser.pseudo}?`)) {
-        api.logout()
-        this.currentUser = null
-        this.currentScreen = 'start'
-        this.playSound()
-      }
+      if (confirm(`Logout from ${this.currentUser.pseudo}?`)) { api.logout(); this.currentUser = null; this.currentScreen = 'start'; this.playSound() }
     },
-
     async startGame() {
-      try {
-        await api.startGame()
-
-        console.log('Starting game for:', this.currentUser.pseudo)
-        alert(`🎮 Starting game for ${this.currentUser.pseudo}!\n\nGood luck!`)
-
-        const response = await api.getProfile()
-        if (response.success) {
-          this.currentUser = response.user
-        }
-
-        await this.loadAccounts()
-        this.playSound()
-      } catch (error) {
-        console.error('Error starting game:', error)
-      }
+      try { await api.startGame(); this.$router.push('/games'); this.playSound() } catch (error) { console.error(error) }
     },
-
-    showStats() {
-      alert(`📊 Stats for ${this.currentUser.pseudo}\n\nGames Played: ${this.currentUser.gamesPlayed}\nHigh Score: ${this.currentUser.highScore}`)
-    },
-
-    showSettings() {
-      alert('⚙️ Settings coming soon!')
-    },
-
+    showStats() { alert(`📊 Stats: ${this.currentUser.highScore} pts`) },
     playSound() {
       try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)()
         const oscillator = audioContext.createOscillator()
         const gainNode = audioContext.createGain()
-
         oscillator.connect(gainNode)
         gainNode.connect(audioContext.destination)
-
         oscillator.frequency.value = 800
         oscillator.type = 'square'
         gainNode.gain.value = 0.1
-
         oscillator.start()
         oscillator.stop(audioContext.currentTime + 0.1)
-      } catch (e) {
-        // Silence errors
-      }
+      } catch (e) {}
     }
   }
 }
@@ -269,12 +156,6 @@ export default {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 .arcade-container {
   min-height: 100vh;
   font-family: 'Press Start 2P', cursive;
@@ -282,52 +163,64 @@ export default {
   position: relative;
   overflow: hidden;
   background: transparent;
+
+  /* Variables originales de Background.vue */
+  --scan-width: 2px;
+  --scan-color: rgba(0, 0, 0, 0.35);
+  --scan-opacity: 0.8;
+  --scan-fps: 60;
+  --scan-z-index: 9999;
 }
 
-.arcade-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
+/* --- ANIMATIONS --- */
+@keyframes scanline-move {
+  0%   { transform: translate3d(0, 500vh, 0); }
+  100% { transform: translate3d(0, -500vh, 0); }
+}
+
+@keyframes scanlines-flicker {
+  0%   { background-position: 100%; }
+  100% { background-position: 0 80%; }
+}
+
+/* --- SCANLINES (Style original) --- */
+
+/* Barre mobile (highlight) */
+.arcade-container.scanlines-enabled::before {
+  content: "";
+  position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  top: 0;
+  height: var(--scan-width);
+  background: var(--scan-color);
+  opacity: var(--scan-opacity);
+  animation: scanline-move 6s linear infinite;
+  z-index: calc(var(--scan-z-index) + 1);
   pointer-events: none;
-  animation: scanlines 8s linear infinite;
+  will-change: transform;
 }
 
-/* Transitions */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.5s;
+/* Trame statique (lignes) */
+.arcade-container.scanlines-enabled::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: var(--scan-z-index);
+  background: linear-gradient(to bottom, transparent 50%, var(--scan-color) 51%);
+  background-size: 100% calc(var(--scan-width) * 2);
+  animation: scanlines-flicker 1s steps(var(--scan-fps)) infinite;
+  pointer-events: none;
+  will-change: background-position;
 }
 
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-
-.slide-enter-active, .slide-leave-active {
-  transition: all 0.5s;
-}
-
-.slide-enter-from {
-  transform: translateX(100%);
-  opacity: 0;
-}
-
-.slide-leave-to {
-  transform: translateX(-100%);
-  opacity: 0;
-}
-
-.modal-fade-enter-active, .modal-fade-leave-active {
-  transition: all 0.3s;
-}
-
-.modal-fade-enter-from, .modal-fade-leave-to {
-  opacity: 0;
-}
-
-.modal-fade-enter-from :deep(.modal-content),
-.modal-fade-leave-to :deep(.modal-content) {
-  transform: scale(0.8) translateY(-50px);
-}
+/* --- Transitions --- */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.5s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+.slide-enter-active, .slide-leave-active { transition: all 0.5s; }
+.slide-enter-from { transform: translateX(100%); opacity: 0; }
+.slide-leave-to { transform: translateX(-100%); opacity: 0; }
+.modal-fade-enter-active, .modal-fade-leave-active { transition: all 0.3s; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+.modal-fade-enter-from :deep(.modal-content), .modal-fade-leave-to :deep(.modal-content) { transform: scale(0.8) translateY(-50px); }
 </style>

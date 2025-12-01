@@ -50,11 +50,7 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(userData)
     });
-
-    if (data.token) {
-      this.setToken(data.token);
-    }
-
+    if (data.token) this.setToken(data.token);
     return data;
   }
 
@@ -63,11 +59,7 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(credentials)
     });
-
-    if (data.token) {
-      this.setToken(data.token);
-    }
-
+    if (data.token) this.setToken(data.token);
     return data;
   }
 
@@ -85,10 +77,11 @@ class ApiService {
     });
   }
 
-  async updateScore(score) {
+  // --- MISE À JOUR ICI ---
+  async updateScore(sessionId, score, duration = 0) {
     return await this.request('/users/game/score', {
       method: 'POST',
-      body: JSON.stringify({ score })
+      body: JSON.stringify({ sessionId, score, duration })
     });
   }
 

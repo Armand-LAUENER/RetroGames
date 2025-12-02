@@ -71,18 +71,24 @@ class ApiService {
     return await this.request('/users/users');
   }
 
-  async startGame() {
+  // --- MODIFICATION CRITIQUE ICI ---
+  async startGame(gameId) {
     return await this.request('/users/game/start', {
-      method: 'POST'
+      method: 'POST',
+      // On envoie bien l'ID du jeu au backend
+      body: JSON.stringify({ gameId })
     });
   }
 
-  // --- MISE À JOUR ICI ---
   async updateScore(sessionId, score, duration = 0) {
     return await this.request('/users/game/score', {
       method: 'POST',
       body: JSON.stringify({ sessionId, score, duration })
     });
+  }
+
+  async getGameLeaderboard(gameId) {
+    return await this.request(`/users/leaderboard/${gameId}`);
   }
 
   logout() {

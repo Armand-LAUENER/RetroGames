@@ -4,58 +4,32 @@ import db from '../config/database.js';
 
 // Générer un token JWT
 const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
-  });
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
 // Inscription
 export const register = async (req, res) => {
   try {
     const { email, pseudo, password, color } = req.body;
+    const existing = db.prepare('SELECT * FROM users WHERE email = ? OR pseudo = ?').get(email, pseudo);
+    if (existing) return res.status(400).json({ message: 'Email ou pseudo déjà utilisé' });
 
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = db.prepare(
-      'SELECT * FROM users WHERE email = ? OR pseudo = ?'
-    ).get(email, pseudo);
-
-    if (existingUser) {
-      return res.status(400).json({
-        message: 'Email ou pseudo déjà utilisé'
-      });
-    }
-
-    // Hasher le mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
+    const result = db.prepare('INSERT INTO users (email, pseudo, password, color) VALUES (?, ?, ?, ?)')
+                     .run(email, pseudo, hashedPassword, color || '#FF6B6B');
 
-    // Insérer l'utilisateur
-    const insertUser = db.prepare(
-      'INSERT INTO users (email, pseudo, password, color) VALUES (?, ?, ?, ?)'
-    );
-
-    const result = insertUser.run(email, pseudo, hashedPassword, color || '#FF6B6B');
+    // Init stats
     const userId = result.lastInsertRowid;
-
-    // Créer les stats utilisateur
     db.prepare('INSERT INTO user_stats (user_id) VALUES (?)').run(userId);
 
-    // Générer le token
     const token = generateToken(userId);
-
     res.status(201).json({
       message: 'Inscription réussie',
       token,
-      user: {
-        id: userId,
-        email,
-        pseudo,
-        color: color || '#FF6B6B'
-      }
+      user: { id: userId, email, pseudo, color, highScore: 0, gamesPlayed: 0 }
     });
-
   } catch (error) {
-    console.error('❌ Register error:', error);
-    res.status(500).json({ message: 'Erreur lors de l\'inscription' });
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 };
 
@@ -63,216 +37,129 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { pseudo, password } = req.body;
-
-    // Trouver l'utilisateur
     const user = db.prepare('SELECT * FROM users WHERE pseudo = ?').get(pseudo);
-
-    if (!user) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: 'Identifiants invalides' });
     }
 
-    // Vérifier le mot de passe
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Identifiants invalides' });
-    }
-
-    // Mettre à jour last_login
     db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
-
-    // Générer le token
     const token = generateToken(user.id);
 
-    // Retirer le mot de passe
+    // On nettoie l'objet user
     delete user.password;
+    // On normalise les champs pour le frontend (camelCase)
+    user.highScore = user.high_score;
+    user.gamesPlayed = user.games_played;
 
-    res.json({
-      message: 'Connexion réussie',
-      token,
-      user
-    });
-
+    res.json({ message: 'Connexion réussie', token, user });
   } catch (error) {
-    console.error('❌ Login error:', error);
-    res.status(500).json({ message: 'Erreur lors de la connexion' });
+    res.status(500).json({ message: 'Erreur connexion' });
   }
 };
 
-// Obtenir tous les utilisateurs (public)
-export const getAllUsers = async (req, res) => {
-  try {
-    const users = db.prepare(
-      'SELECT id, pseudo, color, high_score, games_played, created_at FROM users ORDER BY high_score DESC'
-    ).all();
-
-    res.json({
-      success: true,
-      count: users.length,
-      users
-    });
-
-  } catch (error) {
-    console.error('❌ Get all users error:', error);
-    res.status(500).json({ message: 'Erreur lors de la récupération des utilisateurs' });
-  }
-};
-
-// Obtenir le profil (protégé)
+// Profil
 export const getProfile = async (req, res) => {
   try {
-    const userId = req.user.id;
-
-    const user = db.prepare(
-      'SELECT id, email, pseudo, color, games_played, high_score, created_at, last_login FROM users WHERE id = ?'
-    ).get(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé' });
-    }
-
+    const user = db.prepare('SELECT id, email, pseudo, color, games_played as gamesPlayed, high_score as highScore, created_at FROM users WHERE id = ?').get(req.user.id);
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
     res.json({ user });
-
   } catch (error) {
-    console.error('❌ Get profile error:', error);
-    res.status(500).json({ message: 'Erreur lors de la récupération du profil' });
+    res.status(500).json({ message: 'Erreur profil' });
   }
 };
 
-// Démarrer une partie
+// Démarrer une partie (Avec Game ID)
 export const startGame = async (req, res) => {
   try {
     const userId = req.user.id;
+    const { gameId } = req.body; // ex: 'snake', 'tetris'
 
-    const insertSession = db.prepare(
-      'INSERT INTO game_sessions (user_id) VALUES (?)'
-    );
+    if (!gameId) return res.status(400).json({ message: 'Game ID required' });
 
-    const result = insertSession.run(userId);
-    const sessionId = result.lastInsertRowid;
+    const result = db.prepare('INSERT INTO game_sessions (user_id, game_id) VALUES (?, ?)')
+                     .run(userId, gameId);
 
-    res.json({
-      message: 'Partie démarrée',
-      sessionId,
-      startedAt: new Date().toISOString()
-    });
-
+    res.json({ sessionId: result.lastInsertRowid });
   } catch (error) {
-    console.error('❌ Start games error:', error);
-    res.status(500).json({ message: 'Erreur lors du démarrage de la partie' });
+    console.error('Start Error:', error);
+    res.status(500).json({ message: 'Erreur démarrage' });
   }
 };
 
-// Mettre à jour le score
+// Enregistrer le score (Logique Multi-Jeux)
 export const updateScore = async (req, res) => {
   try {
     const userId = req.user.id;
     const { sessionId, score, duration } = req.body;
 
-    // Mettre à jour la session
-    db.prepare(
-      'UPDATE game_sessions SET score = ?, duration = ? WHERE id = ? AND user_id = ?'
-    ).run(score, duration, sessionId, userId);
+    // 1. Récupérer le jeu concerné
+    const session = db.prepare('SELECT game_id FROM game_sessions WHERE id = ?').get(sessionId);
+    if (!session) return res.status(404).json({ message: 'Session introuvable' });
+    const gameId = session.game_id;
 
-    // Récupérer le high score actuel
-    const user = db.prepare('SELECT high_score, games_played FROM users WHERE id = ?').get(userId);
+    // 2. Mettre à jour la session
+    db.prepare('UPDATE game_sessions SET score = ?, duration = ? WHERE id = ?').run(score, duration, sessionId);
 
-    // Mettre à jour les stats utilisateur
-    const newGamesPlayed = user.games_played + 1;
-    const newHighScore = Math.max(user.high_score, score);
+    // 3. Mettre à jour le score SPÉCIFIQUE au jeu (user_scores)
+    // UPSERT : Insère si nouveau, Met à jour si le score est meilleur
+    const currentBest = db.prepare('SELECT best_score FROM user_scores WHERE user_id = ? AND game_id = ?').get(userId, gameId);
+    const oldScore = currentBest ? currentBest.best_score : 0;
 
-    db.prepare(
-      'UPDATE users SET games_played = ?, high_score = ? WHERE id = ?'
-    ).run(newGamesPlayed, newHighScore, userId);
+    if (score > oldScore) {
+      db.prepare(`
+        INSERT INTO user_scores (user_id, game_id, best_score, updated_at) 
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, game_id) DO UPDATE SET 
+        best_score = excluded.best_score,
+        updated_at = CURRENT_TIMESTAMP
+      `).run(userId, gameId, score);
+    }
 
-    // Mettre à jour user_stats
-    const allScores = db.prepare(
-      'SELECT score FROM game_sessions WHERE user_id = ?'
-    ).all(userId);
+    // 4. Recalculer le score GLOBAL (Somme de tous les meilleurs scores)
+    const globalStats = db.prepare('SELECT SUM(best_score) as total FROM user_scores WHERE user_id = ?').get(userId);
+    const newGlobalScore = globalStats.total || 0;
 
-    const totalPlaytime = db.prepare(
-      'SELECT SUM(duration) as total FROM game_sessions WHERE user_id = ?'
-    ).get(userId).total || 0;
+    // 5. Mettre à jour l'utilisateur global
+    db.prepare('UPDATE users SET games_played = games_played + 1, high_score = ? WHERE id = ?')
+      .run(newGlobalScore, userId);
 
-    const averageScore = allScores.length > 0
-      ? allScores.reduce((sum, s) => sum + s.score, 0) / allScores.length
-      : 0;
-
-    db.prepare(
-      'UPDATE user_stats SET total_playtime = ?, average_score = ? WHERE user_id = ?'
-    ).run(totalPlaytime, averageScore, userId);
-
-    res.json({
-      message: 'Score enregistré',
-      score,
-      highScore: newHighScore,
-      isNewHighScore: score > user.high_score
-    });
-
+    res.json({ message: 'Score saved', newHighScore: score > oldScore });
   } catch (error) {
-    console.error('❌ Update score error:', error);
-    res.status(500).json({ message: 'Erreur lors de l\'enregistrement du score' });
+    console.error('Score Error:', error);
+    res.status(500).json({ message: 'Erreur sauvegarde score' });
   }
 };
 
-// Obtenir les statistiques
-export const getUserStats = async (req, res) => {
+// Leaderboard d'un jeu spécifique
+export const getGameLeaderboard = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const { gameId } = req.params;
+    const leaderboard = db.prepare(`
+      SELECT u.pseudo, u.color, s.best_score as highScore
+      FROM user_scores s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.game_id = ?
+      ORDER BY s.best_score DESC
+      LIMIT 10
+    `).all(gameId);
 
-    const user = db.prepare(
-      'SELECT pseudo, color, high_score, games_played FROM users WHERE id = ?'
-    ).get(userId);
-
-    const stats = db.prepare(
-      'SELECT * FROM user_stats WHERE user_id = ?'
-    ).get(userId);
-
-    const recentGames = db.prepare(
-      'SELECT score, duration, played_at FROM game_sessions WHERE user_id = ? ORDER BY played_at DESC LIMIT 10'
-    ).all(userId);
-
-    res.json({
-      success: true,
-      user,
-      stats: {
-        ...stats,
-        achievements: JSON.parse(stats.achievements || '[]')
-      },
-      recentGames
-    });
-
+    res.json({ leaderboard });
   } catch (error) {
-    console.error('❌ Get user stats error:', error);
-    res.status(500).json({ message: 'Erreur lors de la récupération des statistiques' });
+    res.status(500).json({ message: 'Erreur leaderboard' });
   }
 };
 
-// Obtenir le leaderboard
-export const getLeaderboard = async (req, res) => {
+// Leaderboard Global (Tous les utilisateurs)
+export const getAllUsers = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 10;
-
-    const leaderboard = db.prepare(
-      `SELECT 
-        id,
-        pseudo, 
-        color, 
-        high_score, 
-        games_played,
-        created_at
-       FROM users 
-       ORDER BY high_score DESC, games_played DESC
-       LIMIT ?`
-    ).all(limit);
-
-    res.json({
-      success: true,
-      leaderboard
-    });
-
+    const users = db.prepare(`
+      SELECT id, pseudo, color, high_score as highScore, games_played as gamesPlayed 
+      FROM users 
+      ORDER BY high_score DESC 
+      LIMIT 50
+    `).all();
+    res.json({ users });
   } catch (error) {
-    console.error('❌ Get leaderboard error:', error);
-    res.status(500).json({ message: 'Erreur lors de la récupération du classement' });
+    res.status(500).json({ message: 'Erreur' });
   }
 };

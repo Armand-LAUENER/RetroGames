@@ -2,29 +2,23 @@ import jwt from 'jsonwebtoken';
 
 export const authenticate = (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    // Récupérer le token du header "Authorization: Bearer <token>"
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-      return res.status(401).json({
-        success: false, // J'ai ajouté success: false pour être cohérent
-        message: 'Authentication required'
-      });
+      return res.status(401).json({ success: false, message: 'Token manquant' });
     }
 
+    // Vérifier le token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // --- CORRECTION ICI ---
-    // 1. On utilise decoded.id (car le token a été signé avec 'id')
-    // 2. On crée un objet req.user pour que les contrôleurs puissent faire req.user.id
+    // Attacher l'utilisateur à la requête
+    // IMPORTANT : On utilise 'id' car c'est ainsi qu'on l'a signé dans userController
     req.user = { id: decoded.id };
-    // ----------------------
 
     next();
   } catch (error) {
-    console.error('Auth error:', error.message); // Utile pour le débogage
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid or expired token'
-    });
+    return res.status(403).json({ success: false, message: 'Token invalide' });
   }
 };

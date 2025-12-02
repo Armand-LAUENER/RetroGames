@@ -9,11 +9,11 @@ const routes = [
     component: HomeView
   },
   {
-    // On ajoute le paramètre dynamique :gameId
-    path: '/games/:gameId',
+    // Le :gameId est indispensable ici
+    path: '/game/:gameId',
     name: 'Game',
     component: GameView,
-    props: true // Permet de passer gameId comme une prop
+    props: true // Permet de passer gameId comme une "prop" au composant
   }
 ]
 

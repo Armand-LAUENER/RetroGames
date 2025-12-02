@@ -36,7 +36,7 @@ import PongGame from '@/components/games/PongGame.vue'
 
 export default {
   name: 'GameView',
-  props: ['gameId'],
+  props: ['gameId'], // Reçoit l'ID via le routeur (ex: 'snake')
   components: { SnakeGame, TetrisGame, SpaceDefender, PongGame },
   data() {
     return {
@@ -44,7 +44,7 @@ export default {
       loading: true,
       currentSessionId: null,
       startTime: null,
-      currentControls: 'arrows' // Par défaut
+      currentControls: 'arrows'
     }
   },
   computed: {
@@ -58,7 +58,7 @@ export default {
     }
   },
   async mounted() {
-    // 1. Récupérer les settings depuis le localStorage
+    // 1. Récupérer les contrôles
     const savedSettings = localStorage.getItem('arcade_settings')
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings)
@@ -70,13 +70,17 @@ export default {
       const response = await api.getProfile()
       if (response.user) {
         this.user = response.user
-        const session = await api.startGame()
+
+        // --- IMPORTANT : On passe this.gameId à l'API ---
+        const session = await api.startGame(this.gameId)
+
         this.currentSessionId = session.sessionId
         this.startTime = Date.now()
       } else {
         this.goBack()
       }
     } catch (e) {
+      console.error("Erreur démarrage jeu:", e)
       this.goBack()
     } finally {
       this.loading = false
@@ -89,19 +93,13 @@ export default {
     async handleGameOver(score) {
       if (this.currentSessionId) {
         try {
-          // Calculer la durée en secondes
           const duration = Math.floor((Date.now() - this.startTime) / 1000)
-
-          // Envoyer au backend avec les bons paramètres
           await api.updateScore(this.currentSessionId, score, duration)
-
           alert(`Game Over! Score: ${score} points saved!`)
-
-          // Optionnel : Retour au menu après validation
+          // Recharger les infos utilisateur après sauvegarde (optionnel)
           // this.goBack()
         } catch (e) {
           console.error('Score save error', e)
-          alert('Error saving score!')
         }
       }
     }

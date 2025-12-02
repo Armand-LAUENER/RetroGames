@@ -5,20 +5,19 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Chemin vers la base de données
+// Chemin vers le fichier .db
 const dbPath = path.join(__dirname, '..', 'arcade_game.db');
 
-// Créer/ouvrir la base de données
+// Options verbose pour voir les requêtes SQL dans la console (utile pour le debug)
 const db = new Database(dbPath, { verbose: console.log });
 
 // Activer les clés étrangères
 db.pragma('foreign_keys = ON');
 
-// Initialiser les tables
 export function initDatabase() {
-  console.log('🗄️  Initializing SQLite database...');
+  console.log('🗄️  Initialisation de la base de données SQLite...');
 
-  // Table users
+  // 1. Table Utilisateurs
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,28 +29,36 @@ export function initDatabase() {
       games_played INTEGER DEFAULT 0,
       high_score INTEGER DEFAULT 0,
       last_login DATETIME
-    )
+    );
   `);
 
-  // Index pour les recherches rapides
+  // 2. Table Scores par Jeu (NOUVEAU)
+  // Attention aux virgules ici, c'est souvent la source d'erreurs
   db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_email ON users(email);
-    CREATE INDEX IF NOT EXISTS idx_pseudo ON users(pseudo);
+    CREATE TABLE IF NOT EXISTS user_scores (
+      user_id INTEGER,
+      game_id TEXT NOT NULL,
+      best_score INTEGER DEFAULT 0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, game_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
 
-  // Table game_sessions
+  // 3. Table Sessions de Jeu
   db.exec(`
     CREATE TABLE IF NOT EXISTS game_sessions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
+      game_id TEXT,
       score INTEGER DEFAULT 0,
       duration INTEGER DEFAULT 0,
       played_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
+    );
   `);
 
-  // Table user_stats
+  // 4. Table Stats Globales
   db.exec(`
     CREATE TABLE IF NOT EXISTS user_stats (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,11 +68,24 @@ export function initDatabase() {
       best_streak INTEGER DEFAULT 0,
       achievements TEXT DEFAULT '[]',
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
+    );
   `);
 
-  console.log('✅ Database tables created successfully');
+  // MIGRATION DE SECOURS :
+  // Si la table game_sessions existe déjà mais sans la colonne game_id, on l'ajoute.
+  try {
+    const columns = db.prepare("PRAGMA table_info(game_sessions)").all();
+    const hasGameId = columns.some(col => col.name === 'game_id');
+
+    if (!hasGameId) {
+      console.log('🔄 Migration: Ajout de la colonne game_id...');
+      db.exec("ALTER TABLE game_sessions ADD COLUMN game_id TEXT");
+    }
+  } catch (error) {
+    // Ignore l'erreur si la table n'existe pas encore
+  }
+
+  console.log('✅ Base de données prête !');
 }
 
-// Exporter la base de données
 export default db;

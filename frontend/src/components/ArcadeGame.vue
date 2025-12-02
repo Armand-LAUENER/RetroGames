@@ -34,7 +34,7 @@
         :user="currentUser"
         :settings="settings"
         @start-game="startGame"
-        @show-global-stats="showGlobalStats = true"
+        @show-stats="openGlobalStats"
         @show-settings="showSettingsModal = true"
         @logout="logout"
         @open-new-page="$router.push('/games')"
@@ -80,20 +80,20 @@ import CreateAccountModal from './arcade/CreateAccountModal.vue'
 import SettingsModal from './arcade/SettingsModal.vue'
 import Background from '@/components/arcade/Background.vue'
 import GlobalLeaderboardModal from './arcade/GlobalLeaderboardModal.vue'
-import PasswordScreen from './arcade/PasswordScreen.vue' // <--- IMPORT
+import PasswordScreen from './arcade/PasswordScreen.vue'
 
 export default {
   name: 'ArcadeGame',
   components: {
     Background, StartScreen, LoginScreen, MainScreen,
     LoginModal, CreateAccountModal, SettingsModal, GlobalLeaderboardModal,
-    PasswordScreen // <--- AJOUT
+    PasswordScreen
   },
   data() {
     return {
       currentScreen: 'start',
       currentUser: null,
-      selectedAccount: null, // <--- Pour stocker le compte cliqué
+      selectedAccount: null,
       showLoginForm: false,
       showCreateForm: false,
       showSettingsModal: false,
@@ -113,15 +113,12 @@ export default {
     if (savedSettings) { this.settings = JSON.parse(savedSettings) }
   },
   methods: {
-    // Méthode modifiée pour basculer vers l'écran de mot de passe
     selectAccount(account) {
       this.selectedAccount = account
       this.loginError = ''
       this.currentScreen = 'password'
       this.playSound()
     },
-
-    // Nouvelle méthode pour traiter le déverrouillage
     async handleUnlock(password) {
       this.loginError = ''
       try {
@@ -129,7 +126,6 @@ export default {
           pseudo: this.selectedAccount.pseudo,
           password: password
         })
-
         if (response.user) {
           this.currentUser = response.user
           this.currentScreen = 'main'
@@ -137,21 +133,26 @@ export default {
         }
       } catch (error) {
         this.loginError = 'INVALID PASSWORD'
-        // Petit son d'erreur si vous voulez
       }
     },
-
-    // ... Le reste de vos méthodes reste inchangé ...
+    async openGlobalStats() {
+      try {
+        const response = await api.getAllUsers()
+        if (response.users) {
+          this.globalPlayers = response.users
+          this.showGlobalStats = true
+        }
+      } catch (e) {
+        console.error("Impossible de charger le classement global", e)
+      }
+    },
     updateSettings(newSettings) {
       this.settings = newSettings
       localStorage.setItem('arcade_settings', JSON.stringify(newSettings))
     },
-    openGlobalStats() {
-      this.showGlobalStats = true
-    },
     goToLogin() { this.currentScreen = 'login'; this.playSound() },
     async loadAccounts() {
-      try { const response = await api.getAllUsers(); this.accounts = response.users; this.globalPlayers = response.users; }
+      try { const response = await api.getAllUsers(); this.accounts = response.users; }
       catch (error) { console.error(error) }
     },
     async checkAutoLogin() {
@@ -172,7 +173,6 @@ export default {
         if (response.user) { this.currentUser = response.user; this.closeLoginForm(); this.currentScreen = 'main'; this.playSound() }
       } catch (error) { this.loginError = error.message || 'Invalid credentials' }
     },
-    // La méthode quickLogin (avec prompt) peut être supprimée ou gardée en fallback, mais selectAccount la remplace.
     logout() {
       if (confirm(`Logout from ${this.currentUser.pseudo}?`)) { api.logout(); this.currentUser = null; this.currentScreen = 'start'; this.playSound() }
     },
@@ -198,7 +198,6 @@ export default {
 </script>
 
 <style scoped>
-/* Conservez les styles existants (scanlines, etc.) */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 .arcade-container { min-height: 100vh; font-family: 'Press Start 2P', cursive; color: white; position: relative; overflow: hidden; background: transparent; --scan-width: 2px; --scan-color: rgba(0, 0, 0, 0.35); --scan-opacity: 0.8; --scan-fps: 60; --scan-z-index: 9999; }
 @keyframes scanline-move { 0% { transform: translate3d(0, 500vh, 0); } 100% { transform: translate3d(0, -500vh, 0); } }

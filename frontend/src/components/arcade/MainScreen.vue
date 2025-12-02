@@ -204,7 +204,8 @@ export default {
 </script>
 
 <style scoped>
-/* Layout Global */
+/* CSS Ajusté */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 .main-screen { height: 100vh; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
 .hub-header { display: flex; justify-content: space-between; align-items: center; height: 80px; margin-bottom: 20px; }
 .player-badge { display: flex; align-items: center; gap: 15px; background: rgba(0, 0, 0, 0.6); padding: 10px 20px; border-radius: 4px; }
@@ -218,61 +219,32 @@ export default {
 .logout-btn { background: #FF6B6B; font-size: 0.7rem !important; padding: 10px 15px !important; }
 .arcade-hub { display: flex; gap: 30px; flex: 1; height: calc(100% - 100px); }
 
-/* --- GAUCHE : ROUE --- */
+/* ROUE STYLISÉE */
 .game-wheel-container {
-  flex: 0 0 300px;
-  display: flex;
-  flex-direction: column;
-  background: rgba(22, 33, 62, 0.9);
-  backdrop-filter: blur(10px);
-  padding: 20px;
+  flex: 0 0 300px; display: flex; flex-direction: column;
+  background: rgba(22, 33, 62, 0.9); backdrop-filter: blur(10px); padding: 20px; /* Ajout du fond et padding */
 }
 .wheel-title { text-align: center; color: #95E1D3; margin-bottom: 10px; font-size: 0.8rem; text-shadow: 2px 2px 0 #000; }
-
 .game-wheel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  /* MODIFICATION : Padding augmenté pour éviter que le zoom ne touche les bords */
-  padding: 25px 30px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: #FFE66D rgba(0,0,0,0.3);
+  flex: 1; display: flex; flex-direction: column; gap: 15px;
+  padding: 25px 30px; /* Padding augmenté pour laisser place au zoom */
+  overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: #FFE66D rgba(0,0,0,0.3);
 }
-
 .game-item {
-  background: rgba(0, 0, 0, 0.5);
-  padding: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  transition: all 0.3s;
-  opacity: 0.6;
-  position: relative;
-  transform: scale(0.95);
-  backface-visibility: hidden;
+  background: rgba(0, 0, 0, 0.5); padding: 20px; cursor: pointer; display: flex; align-items: center; gap: 15px; transition: all 0.3s;
+  opacity: 0.6; position: relative; transform: scale(0.95); backface-visibility: hidden;
 }
-
 .game-item:hover { opacity: 0.8; transform: scale(0.98); }
-
 .game-item.active {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #FFE66D;
-  /* MODIFICATION : Zoom réduit à 1.02 pour rester dans le cadre */
-  transform: scale(1.02) translateX(5px);
-  z-index: 2;
-  box-shadow: -5px 5px 0 rgba(0,0,0,0.5);
+  opacity: 1; background: rgba(255, 255, 255, 0.15); border-color: #FFE66D;
+  transform: scale(1.02) translateX(5px); /* Zoom réduit pour éviter débordement */
+  z-index: 2; box-shadow: -5px 5px 0 rgba(0,0,0,0.5);
 }
-
 .game-icon { font-size: 1.5rem; }
 .game-label { font-size: 0.8rem; color: white; flex: 1; }
 .selection-arrow { color: #FFE66D; animation: blink 1s infinite; }
 
-/* --- DROITE : PREVIEW --- */
 .game-preview-container { flex: 1; background: rgba(22, 33, 62, 0.9); backdrop-filter: blur(10px); padding: 30px; display: flex; flex-direction: column; gap: 20px; position: relative; }
 .preview-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 15px; }
 .preview-title { font-size: 2rem; text-shadow: 3px 3px 0 rgba(0,0,0,0.8); margin: 0; }

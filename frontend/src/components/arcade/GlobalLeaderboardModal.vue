@@ -88,4 +88,9 @@ export default {
 .avatar { width: 20px; height: 20px; border: 1px solid white; display: inline-block; }
 .score { color: #FF6B6B; font-weight: bold; }
 .loading-text { text-align: center; padding: 20px; color: #999; }
+
+/* Scrollbar */
+.ranking-list::-webkit-scrollbar { width: 8px; }
+.ranking-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+.ranking-list::-webkit-scrollbar-thumb { background: #4ECDC4; }
 </style>

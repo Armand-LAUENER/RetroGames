@@ -5,19 +5,23 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Chemin vers le fichier .db
+// Path to the SQLite database file
 const dbPath = path.join(__dirname, '..', 'arcade_game.db');
 
-// Options verbose pour voir les requêtes SQL dans la console (utile pour le debug)
+// Initialize the database with verbose logging for debugging purposes
 const db = new Database(dbPath, { verbose: console.log });
 
-// Activer les clés étrangères
+// Enable foreign key constraints enforcement
 db.pragma('foreign_keys = ON');
 
+/**
+ * Initializes the database schema.
+ * Creates necessary tables if they do not exist.
+ */
 export function initDatabase() {
-  console.log('🗄️  Initialisation de la base de données SQLite...');
+  console.log('🗄️  Initializing SQLite database...');
 
-  // 1. Table Utilisateurs
+  // 1. Users Table
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,8 +36,7 @@ export function initDatabase() {
     );
   `);
 
-  // 2. Table Scores par Jeu (NOUVEAU)
-  // Attention aux virgules ici, c'est souvent la source d'erreurs
+  // 2. User Scores Table (High scores per game)
   db.exec(`
     CREATE TABLE IF NOT EXISTS user_scores (
       user_id INTEGER,
@@ -45,7 +48,7 @@ export function initDatabase() {
     );
   `);
 
-  // 3. Table Sessions de Jeu
+  // 3. Game Sessions Table (History of played games)
   db.exec(`
     CREATE TABLE IF NOT EXISTS game_sessions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,21 +61,20 @@ export function initDatabase() {
     );
   `);
 
-  // MIGRATION DE SECOURS :
-  // Si la table game_sessions existe déjà mais sans la colonne game_id, on l'ajoute.
+  // Migration: Add game_id column to game_sessions if it's missing
   try {
     const columns = db.prepare("PRAGMA table_info(game_sessions)").all();
     const hasGameId = columns.some(col => col.name === 'game_id');
 
     if (!hasGameId) {
-      console.log('🔄 Migration: Ajout de la colonne game_id...');
+      console.log('🔄 Migration: Adding game_id column...');
       db.exec("ALTER TABLE game_sessions ADD COLUMN game_id TEXT");
     }
   } catch (error) {
-    // Ignore l'erreur si la table n'existe pas encore
+    // Ignore error if table creation failed earlier
   }
 
-  console.log('✅ Base de données prête !');
+  console.log('✅ Database is ready!');
 }
 
 export default db;

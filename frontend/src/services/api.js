@@ -1,20 +1,37 @@
 const API_URL = 'http://localhost:3000/api';
 
+/**
+ * Service to handle all HTTP requests to the backend API.
+ * Manages authentication tokens and request headers.
+ */
 class ApiService {
   constructor() {
     this.token = localStorage.getItem('token');
   }
 
+  /**
+   * Stores the JWT token in local storage and updates the instance.
+   * @param {string} token
+   */
   setToken(token) {
     this.token = token;
     localStorage.setItem('token', token);
   }
 
+  /**
+   * Clears the authentication token.
+   */
   clearToken() {
     this.token = null;
     localStorage.removeItem('token');
   }
 
+  /**
+   * Generic request handler wrapper.
+   * Automatically adds Authorization header if token exists.
+   * @param {string} endpoint - API endpoint
+   * @param {Object} options - Fetch options
+   */
   async request(endpoint, options = {}) {
     const headers = {
       'Content-Type': 'application/json',
@@ -44,7 +61,8 @@ class ApiService {
     }
   }
 
-  // Authentification
+  // --- Auth Endpoints ---
+
   async register(userData) {
     const data = await this.request('/users/register', {
       method: 'POST',
@@ -71,11 +89,11 @@ class ApiService {
     return await this.request('/users/users');
   }
 
-  // --- MODIFICATION CRITIQUE ICI ---
+  // --- Game Endpoints ---
+
   async startGame(gameId) {
     return await this.request('/users/game/start', {
       method: 'POST',
-      // On envoie bien l'ID du jeu au backend
       body: JSON.stringify({ gameId })
     });
   }

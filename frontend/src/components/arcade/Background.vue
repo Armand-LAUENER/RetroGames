@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Composant de décor uniquement
+// Decoration component only
 </script>
 
 <template>
@@ -8,11 +8,11 @@
 <style>
 /* =========================================================
    Background Only (Outrun Style)
-   Scanlines removed from here to be managed by ArcadeGame.vue
+   Scanlines managed by ArcadeGame.vue
    ========================================================= */
 
 :root {
-  /* Couleurs */
+  /* Color Palette */
   --c1: hsl(219, 79%, 66%);
   --c2: hsl(319, 100%, 60%);
   --c3: hsl(266, 49%, 25%);
@@ -32,10 +32,10 @@
   to { --outrun: 1; }
 }
 
-/* Le fond d'écran s'applique à HTML pour couvrir toute la fenêtre */
+/* Background applies to HTML to cover the entire window */
 html {
   height: 100vh;
-  /* Fond noir par défaut pour éviter l'écran blanc si l'image charge mal */
+  /* Default black background to prevent white flash if image loads slowly */
   background-color: #000;
 }
 
@@ -62,7 +62,7 @@ html::before {
   --distance: 0.5%;
   --hor: 60%;
 
-  /* Lignes de perspective calculées */
+  /* Perspective calculations */
   --l0: calc(var(--hor) + 0 * 0 * var(--distance) + (((0 + 1) * (0 + 1) * var(--distance) - 0 * 0 * var(--distance)) * var(--pos)));
   --l1: calc(var(--hor) + 1 * 1 * var(--distance) + (((1 + 1) * (1 + 1) * var(--distance) - 1 * 1 * var(--distance)) * var(--pos)));
   --l2: calc(var(--hor) + 2 * 2 * var(--distance) + (((2 + 1) * (2 + 1) * var(--distance) - 2 * 2 * var(--distance)) * var(--pos)));

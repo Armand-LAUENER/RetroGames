@@ -166,11 +166,10 @@ export default {
     window.removeEventListener('keydown', this.handleKeydown)
   },
   methods: {
-    formatScore(val) { return (val || 0).toLocaleString('fr-FR') },
+    formatScore(val) { return (val || 0).toLocaleString('en-US') },
     getRankClass(i) { if(i===0)return 'gold'; if(i===1)return 'silver'; if(i===2)return 'bronze'; return '' },
     async selectGame(id) {
       this.selectedGameId = id
-      // Le son est géré par le watcher de touche ou le clic, pas besoin de l'appeler ici pour éviter le doublon au montage
       this.loadingLeaderboard = true
       this.leaderboardData = []
       try {
@@ -182,14 +181,14 @@ export default {
       this.$router.push({ name: 'Game', params: { gameId: this.selectedGameId } })
     },
 
-    // --- GESTION DES TOUCHES CORRIGÉE ---
+    // Handles keyboard navigation within the menu
     handleKeydown(e) {
       const controls = this.settings?.controls || 'arrows'
       const key = e.key.toLowerCase()
       const code = e.code
       let action = null
 
-      // Bloquer le scroll natif pour les flèches
+      // Prevent native scroll
       if(["ArrowUp","ArrowDown"].includes(code)) e.preventDefault()
 
       if (controls === 'arrows') {
@@ -210,12 +209,9 @@ export default {
 
       if (action === 'up') {
         this.navigateWheel(-1)
-        // Petit son via le parent (optionnel si vous voulez un son au défilement)
-        // this.$parent.playSound()
       }
       if (action === 'down') {
         this.navigateWheel(1)
-        // this.$parent.playSound()
       }
       if (action === 'select') this.handlePlay()
     },
@@ -227,7 +223,7 @@ export default {
       if (newIndex >= this.games.length) newIndex = 0
       this.selectGame(this.games[newIndex].id)
 
-      // Faire défiler visuellement
+      // Visual scrolling
       this.$nextTick(() => {
         const el = this.$refs['gameItem-' + newIndex]
         if (el && el[0]) el[0].scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -238,9 +234,7 @@ export default {
 </script>
 
 <style scoped>
-/* Les styles sont maintenant gérés globalement via arcade-styles.css pour la structure commune */
-/* On garde ici seulement la mise en page spécifique au Hub */
-
+/* Styling specifics for the Hub */
 .main-screen { height: 100vh; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
 .hub-header { display: flex; justify-content: space-between; align-items: center; height: 80px; margin-bottom: 20px; }
 .player-badge { display: flex; align-items: center; gap: 15px; background: rgba(0, 0, 0, 0.6); padding: 10px 20px; border-radius: 4px; }
@@ -254,7 +248,7 @@ export default {
 .logout-btn { background: #FF6B6B; font-size: 0.7rem !important; padding: 10px 15px !important; }
 .arcade-hub { display: flex; gap: 30px; flex: 1; height: calc(100% - 100px); }
 
-/* ROUE STYLISÉE */
+/* STYLIZED WHEEL */
 .game-wheel-container {
   flex: 0 0 300px; display: flex; flex-direction: column;
   background: rgba(22, 33, 62, 0.9); backdrop-filter: blur(10px); padding: 20px;

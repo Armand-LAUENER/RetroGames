@@ -41,6 +41,7 @@
       />
     </transition>
 
+    <!-- Modals -->
     <transition name="modal-fade">
       <LoginModal v-if="showLoginForm" :error="loginError" @close="closeLoginForm" @submit="loginWithPassword" />
     </transition>
@@ -107,7 +108,7 @@ export default {
     }
   },
   async mounted() {
-    await this.loadAccounts() // Charge depuis le LocalStorage
+    await this.loadAccounts()
     await this.checkAutoLogin()
 
     const savedSettings = localStorage.getItem('arcade_settings')
@@ -116,12 +117,14 @@ export default {
         const parsed = JSON.parse(savedSettings)
         this.settings = { ...this.settings, ...parsed }
       } catch (e) {
-        console.error("Erreur chargement settings", e)
+        console.error("Error loading settings", e)
       }
     }
   },
   methods: {
-    // --- CHANGEMENT 1 : Charger les comptes depuis le navigateur uniquement ---
+    /**
+     * Loads known accounts from LocalStorage
+     */
     loadAccounts() {
       try {
         const stored = localStorage.getItem('arcade_known_accounts');
@@ -131,28 +134,25 @@ export default {
           this.accounts = [];
         }
       } catch (error) {
-        console.error('Erreur lecture localStorage:', error);
+        console.error('Error reading localStorage:', error);
         this.accounts = [];
       }
     },
 
-    // --- CHANGEMENT 2 : Sauvegarder un compte localement après connexion ---
+    /**
+     * Saves or updates a user in the local accounts list
+     * @param {Object} user
+     */
     rememberAccount(user) {
-      // 1. Récupérer la liste actuelle
       let known = this.accounts;
-
-      // 2. Vérifier si l'utilisateur est déjà dedans (pour le mettre à jour)
       const index = known.findIndex(u => u.id === user.id);
 
       if (index !== -1) {
-        // Mise à jour des infos (score, etc.)
         known[index] = user;
       } else {
-        // Ajout nouveau
         known.push(user);
       }
 
-      // 3. Mettre à jour l'état et le LocalStorage
       this.accounts = known;
       localStorage.setItem('arcade_known_accounts', JSON.stringify(known));
     },
@@ -173,7 +173,7 @@ export default {
         })
         if (response.user) {
           this.currentUser = response.user
-          this.rememberAccount(this.currentUser) // Mise à jour des infos locales
+          this.rememberAccount(this.currentUser)
           this.currentScreen = 'main'
           this.playSound()
         }
@@ -184,14 +184,13 @@ export default {
 
     async openGlobalStats() {
       try {
-        // Pour le classement, on continue de charger TOUT le monde depuis l'API, c'est normal
         const response = await api.getAllUsers()
         if (response.users) {
           this.globalPlayers = response.users
           this.showGlobalStats = true
         }
       } catch (e) {
-        console.error("Impossible de charger le classement global", e)
+        console.error("Unable to load global rankings", e)
       }
     },
 
@@ -201,7 +200,7 @@ export default {
     },
 
     goToLogin() {
-      this.loadAccounts(); // Rafraîchir la liste locale
+      this.loadAccounts();
       this.currentScreen = 'login';
       this.playSound()
     },
@@ -211,7 +210,7 @@ export default {
         const response = await api.getProfile();
         if (response.user) {
           this.currentUser = response.user;
-          this.rememberAccount(this.currentUser); // On se souvient de lui
+          this.rememberAccount(this.currentUser);
           this.currentScreen = 'main'
         }
       }
@@ -226,7 +225,7 @@ export default {
         const response = await api.register({ email: data.email, pseudo: data.pseudo, password: data.password, color: this.colors[Math.floor(Math.random() * this.colors.length)] })
         if (response.user) {
           this.currentUser = response.user;
-          this.rememberAccount(this.currentUser); // SAUVEGARDE LOCALE ICI
+          this.rememberAccount(this.currentUser);
           this.closeCreateForm();
           this.currentScreen = 'main';
           this.playSound();
@@ -239,7 +238,7 @@ export default {
         const response = await api.login({ pseudo: data.pseudo, password: data.password })
         if (response.user) {
           this.currentUser = response.user;
-          this.rememberAccount(this.currentUser); // SAUVEGARDE LOCALE ICI
+          this.rememberAccount(this.currentUser);
           this.closeLoginForm();
           this.currentScreen = 'main';
           this.playSound()
@@ -264,6 +263,9 @@ export default {
       } catch (error) { console.error(error) }
     },
 
+    /**
+     * Plays a simple UI sound effect using the Web Audio API
+     */
     playSound() {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext
@@ -288,7 +290,6 @@ export default {
 </script>
 
 <style scoped>
-/* Les styles restent identiques, gérés globalement */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 .arcade-container { min-height: 100vh; font-family: 'Press Start 2P', cursive; color: white; position: relative; overflow: hidden; background: transparent; --scan-width: 2px; --scan-color: rgba(0, 0, 0, 0.35); --scan-opacity: 0.8; --scan-fps: 60; --scan-z-index: 9999; }
 @keyframes scanline-move { 0% { transform: translate3d(0, 500vh, 0); } 100% { transform: translate3d(0, -500vh, 0); } }

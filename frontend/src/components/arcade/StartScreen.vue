@@ -12,6 +12,11 @@
 </template>
 
 <script>
+/**
+ * StartScreen Component
+ * * Displays the initial landing screen of the arcade application.
+ * Features a retro-style glitch effect title and a start button to initiate the flow.
+ */
 export default {
   name: 'StartScreen',
   emits: ['start']
@@ -63,10 +68,9 @@ export default {
   50% { transform: translateY(-20px); }
 }
 
-/* --- MODIFICATION ICI --- */
 .start-button {
-  width: 100%;        /* S'adapte sur mobile */
-  max-width: 250px;   /* Limite la largeur maximale (réduit la longueur) */
+  width: 100%;
+  max-width: 250px;
   animation: pulse 1.5s ease-in-out infinite;
 }
 

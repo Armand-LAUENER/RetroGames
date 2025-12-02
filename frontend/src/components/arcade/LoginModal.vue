@@ -6,12 +6,12 @@
       <h3 class="modal-title">LOGIN</h3>
 
       <div class="form-group">
-        <label>PSEUDO:</label>
+        <label>USERNAME:</label>
         <input
           v-model="localData.pseudo"
           type="text"
           class="pixel-input"
-          placeholder="Enter pseudo"
+          placeholder="Enter username"
           @keyup.enter="handleSubmit"
         />
       </div>
@@ -43,6 +43,10 @@
 </template>
 
 <script>
+/**
+ * LoginModal Component
+ * * Provides a form for users to log in manually using their username and password.
+ */
 export default {
   name: 'LoginModal',
   props: {
@@ -64,5 +68,5 @@ export default {
 </script>
 
 <style scoped>
-/* Tout le style est maintenant dans arcade-styles.css */
+/* All common styles are centralized in arcade-styles.css */
 </style>

@@ -1,6 +1,23 @@
-/* Styles communs pour tous les composants arcade */
+/**
+ * Arcade Global Styles
+ *
+ * This stylesheet centralizes the common visual design language for the application.
+ * It defines reusable classes for buttons, borders, modals, and form inputs,
+ * adhering to the retro "pixel art" aesthetic.
+ *
+ * Dependencies:
+ * - 'Press Start 2P' font (must be imported in the main entry point or index.html)
+ */
 
-/* --- BOUTONS --- */
+/* =========================================
+   BUTTON COMPONENTS
+   ========================================= */
+
+/**
+ * Primary Pixel Button
+ * A large, prominent button used for main actions (e.g., "Start Game", "Login").
+ * Features a 3D press effect using box-shadows.
+ */
 .pixel-button {
   font-family: 'Press Start 2P', cursive;
   background: #FF6B6B;
@@ -10,6 +27,7 @@
   font-size: 1rem;
   cursor: pointer;
   position: relative;
+  /* Creates the 3D bevel effect */
   box-shadow:
     -4px 4px 0 #000,
     inset -4px -4px 0 rgba(0, 0, 0, 0.3),
@@ -18,6 +36,7 @@
   width: 100%;
 }
 
+/* Hover state: Lighter color and slight lift */
 .pixel-button:hover:not(:disabled) {
   background: #ff5252;
   transform: translate(-2px, -2px);
@@ -27,6 +46,7 @@
     inset 4px 4px 0 rgba(255, 255, 255, 0.3);
 }
 
+/* Active state: Button appears pressed down */
 .pixel-button:active:not(:disabled) {
   transform: translate(-1px, -1px);
   box-shadow:
@@ -35,12 +55,17 @@
     inset 2px 2px 0 rgba(255, 255, 255, 0.2);
 }
 
+/* Disabled state */
 .pixel-button:disabled {
   background: #666;
   cursor: not-allowed;
   opacity: 0.5;
 }
 
+/**
+ * Secondary Pixel Button
+ * A smaller, neutral-colored button for secondary actions (e.g., "Cancel", "Back").
+ */
 .pixel-button-small {
   font-family: 'Press Start 2P', cursive;
   background: #666;
@@ -62,7 +87,14 @@
   transform: translate(-2px, -2px);
 }
 
-/* --- BORDURES & TEXTE --- */
+/* =========================================
+   CONTAINERS & BORDERS
+   ========================================= */
+
+/**
+ * Pixel Border Utility
+ * Adds a double-layer border effect (white outer, dark shadow) common in retro UIs.
+ */
 .pixel-border {
   border: 4px solid white;
   box-shadow:
@@ -70,7 +102,14 @@
     inset 0 0 0 4px rgba(0, 0, 0, 0.3);
 }
 
-/* --- MODALES (NOUVEAU) --- */
+/* =========================================
+   MODAL SYSTEM
+   ========================================= */
+
+/**
+ * Modal Overlay
+ * Full-screen backdrop that dims the content behind the modal.
+ */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -83,6 +122,10 @@
   backdrop-filter: blur(5px);
 }
 
+/**
+ * Modal Content
+ * The main container for modal dialogs.
+ */
 .modal-content {
   background: rgba(22, 33, 62, 0.95);
   backdrop-filter: blur(20px);
@@ -92,9 +135,13 @@
   position: relative;
   max-height: 90vh;
   overflow-y: auto;
-  color: white; /* Assure que le texte est blanc par défaut */
+  color: white;
 }
 
+/**
+ * Close Button
+ * Positioned in the top-right corner of modals.
+ */
 .modal-close {
   position: absolute;
   top: 15px; right: 15px;
@@ -124,7 +171,10 @@
   text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* --- FORMULAIRES (NOUVEAU) --- */
+/* =========================================
+   FORM ELEMENTS
+   ========================================= */
+
 .form-group {
   margin-bottom: 25px;
 }
@@ -136,6 +186,10 @@
   color: #FFE66D;
 }
 
+/**
+ * Pixel Input
+ * Retro-styled text input fields with inner shadows.
+ */
 .pixel-input {
   width: 100%;
   padding: 15px;
@@ -170,11 +224,18 @@
   text-align: center;
 }
 
-/* Scrollbar personnalisée pour les modales */
+/* =========================================
+   CUSTOM SCROLLBAR
+   ========================================= */
+
 .modal-content::-webkit-scrollbar { width: 10px; }
 .modal-content::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
 .modal-content::-webkit-scrollbar-thumb { background: #FFE66D; border: 2px solid #000; }
 .modal-content::-webkit-scrollbar-thumb:hover { background: #ffd93d; }
+
+/* =========================================
+   RESPONSIVE ADJUSTMENTS
+   ========================================= */
 
 @media (max-width: 768px) {
   .modal-content { padding: 30px 20px; }

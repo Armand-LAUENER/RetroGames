@@ -13,6 +13,11 @@
 </template>
 
 <script>
+/**
+ * AccountCard Component
+ * * Represents a single user account summary in the login selection screen.
+ * Displays the avatar, username, and key statistics.
+ */
 export default {
   name: 'AccountCard',
   props: {

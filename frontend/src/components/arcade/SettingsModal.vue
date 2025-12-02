@@ -42,7 +42,11 @@
 </template>
 
 <script>
-/* (Le script reste identique à l'original) */
+/**
+ * SettingsModal Component
+ * * Allows users to configure application settings such as visual effects (scanlines)
+ * and input control schemes.
+ */
 export default {
   name: 'SettingsModal',
   props: {
@@ -60,14 +64,26 @@ export default {
     }
   },
   methods: {
+    /**
+     * Toggles the CRT scanline visual effect.
+     */
     toggleScanlines() {
       this.settings.scanlines = !this.settings.scanlines
       this.emitUpdate()
     },
+
+    /**
+     * Updates the selected control scheme.
+     * @param {string} id - The ID of the control scheme (e.g., 'arrows', 'wasd')
+     */
     selectControls(id) {
       this.settings.controls = id
       this.emitUpdate()
     },
+
+    /**
+     * Emits the updated settings object to the parent component.
+     */
     emitUpdate() {
       this.$emit('update-settings', this.settings)
     }
@@ -76,7 +92,7 @@ export default {
 </script>
 
 <style scoped>
-/* Styles spécifiques Settings seulement */
+/* Specific styles for Settings */
 .setting-group { margin-bottom: 30px; }
 .setting-group label {
   display: block; color: #95E1D3; margin-bottom: 15px; font-size: 0.8rem;

@@ -45,6 +45,10 @@
 </template>
 
 <script>
+/**
+ * PasswordScreen Component
+ * * Displays a lock screen for a specific user account, requiring a password to proceed.
+ */
 export default {
   name: 'PasswordScreen',
   props: {
@@ -64,12 +68,15 @@ export default {
     }
   },
   mounted() {
-    // Focus automatique sur le champ mot de passe
+    // Automatically focus the password input field when the component mounts
     this.$nextTick(() => {
       this.$refs.passwordInput.focus()
     })
   },
   methods: {
+    /**
+     * Submits the entered password for verification.
+     */
     submit() {
       if (this.password) {
         this.$emit('submit', this.password)

@@ -2,7 +2,7 @@
   <div class="login-screen">
     <h2 class="select-title">SELECT YOUR ACCOUNT</h2>
 
-    <!-- Liste des comptes existants -->
+    <!-- List of existing accounts -->
     <div v-if="accounts.length > 0" class="accounts-grid">
       <AccountCard
         v-for="account in accounts"
@@ -17,7 +17,7 @@
       <p class="sub-message">Create your first account to start playing!</p>
     </div>
 
-    <!-- Boutons d'action -->
+    <!-- Action buttons -->
     <div class="action-buttons">
       <button @click="$emit('show-login-modal')" class="pixel-button login-btn">
         LOGIN WITH PASSWORD
@@ -38,6 +38,11 @@
 <script>
 import AccountCard from './AccountCard.vue'
 
+/**
+ * LoginScreen Component
+ * * Displays the main user selection screen. Shows a grid of known accounts
+ * for quick access and buttons for manual login or registration.
+ */
 export default {
   name: 'LoginScreen',
   components: {

@@ -11,8 +11,8 @@
       </div>
 
       <div class="form-group">
-        <label>PSEUDO:</label>
-        <input v-model="localData.pseudo" type="text" class="pixel-input" placeholder="Enter pseudo" />
+        <label>USERNAME:</label>
+        <input v-model="localData.pseudo" type="text" class="pixel-input" placeholder="Enter username" />
       </div>
 
       <div class="form-group">
@@ -43,6 +43,11 @@
 </template>
 
 <script>
+/**
+ * CreateAccountModal Component
+ * * Provides a form for new users to register an account.
+ * Includes client-side validation for required fields and password matching.
+ */
 export default {
   name: 'CreateAccountModal',
   props: { error: { type: String, default: '' } },
@@ -71,5 +76,5 @@ export default {
 </script>
 
 <style scoped>
-/* Style centralisé dans arcade-styles.css */
+/* Styles are centralized in arcade-styles.css */
 </style>

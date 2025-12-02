@@ -22,7 +22,7 @@
 <script>
 export default {
   name: 'TetrisGame',
-  props: ['controls'], // Reçoit 'arrows', 'zqsd', ou 'wasd'
+  props: ['controls'],
   emits: ['game-over'],
   data() {
     return {
@@ -35,7 +35,7 @@ export default {
       dropInterval: 1000,
       lastTime: 0,
       animationId: null,
-      // Couleurs des pièces (T, Z, S, O, I, L, J)
+      // Piece colors (T, Z, S, O, I, L, J)
       colors: [
         null,
         '#FF0D72', // T
@@ -51,7 +51,7 @@ export default {
   },
   mounted() {
     this.ctx = this.$refs.canvas.getContext('2d')
-    this.ctx.scale(20, 20) // Échelle : 1 bloc = 20x20 pixels
+    this.ctx.scale(20, 20) // Scale: 1 block = 20x20 pixels
     window.addEventListener('keydown', this.handleKey)
     this.resetGame()
   },
@@ -60,7 +60,7 @@ export default {
     window.removeEventListener('keydown', this.handleKey)
   },
   methods: {
-    // --- Logique Tetris ---
+    // --- Tetris Logic ---
     createMatrix(w, h) {
       const matrix = [];
       while (h--) {
@@ -90,7 +90,7 @@ export default {
         matrix: this.createPiece(type),
         pos: {x: 5, y: 0}
       }
-      // Si collision immédiate => Game Over
+      // Immediate collision means Game Over
       if (this.collide(this.grid, this.currentPiece)) {
         this.gameOver = true
         cancelAnimationFrame(this.animationId)
@@ -115,7 +115,7 @@ export default {
             this.ctx.fillStyle = this.colors[value];
             this.ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
 
-            // Petit effet de relief
+            // 3D relief effect
             this.ctx.lineWidth = 0.05;
             this.ctx.strokeStyle = 'rgba(255,255,255,0.5)';
             this.ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
@@ -199,17 +199,17 @@ export default {
       this.animationId = requestAnimationFrame(this.update);
     },
     draw() {
-      // Fond noir
+      // Black background
       this.ctx.fillStyle = '#000';
       this.ctx.fillRect(0, 0, this.$refs.canvas.width, this.$refs.canvas.height);
 
-      // Grille existante
+      // Existing grid
       this.drawMatrix(this.grid, {x: 0, y: 0});
-      // Pièce courante
+      // Current piece
       this.drawMatrix(this.currentPiece.matrix, this.currentPiece.pos);
     },
 
-    // --- Gestion des touches ---
+    // --- Input Handling ---
     handleKey(e) {
       if (this.gameOver) return
 
@@ -217,7 +217,7 @@ export default {
       const code = e.code
       let action = ''
 
-      // Prévenir le scroll
+      // Prevent scrolling
       if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(code)) e.preventDefault()
 
       // Mapping

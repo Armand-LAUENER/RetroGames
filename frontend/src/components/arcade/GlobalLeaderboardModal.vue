@@ -30,9 +30,12 @@
 </template>
 
 <script>
-/* (Le script reste identique) */
 import api from '../../services/api.js'
 
+/**
+ * GlobalLeaderboardModal Component
+ * * Displays the list of top players worldwide based on their total cumulative score.
+ */
 export default {
   name: 'GlobalLeaderboardModal',
   props: ['currentUser'],
@@ -45,7 +48,7 @@ export default {
     } catch (e) { console.error(e) } finally { this.loading = false }
   },
   methods: {
-    formatScore(val) { return (val || 0).toLocaleString('fr-FR') },
+    formatScore(val) { return (val || 0).toLocaleString('en-US') },
     getRankClass(i) { if (i === 0) return 'gold'; if (i === 1) return 'silver'; if (i === 2) return 'bronze'; return '' },
     isMe(p) { return this.currentUser && p.id === this.currentUser.id }
   }
@@ -53,7 +56,7 @@ export default {
 </script>
 
 <style scoped>
-/* Surcharge spécifique pour le leaderboard (plus large) */
+/* Specific override for the leaderboard to make it wider */
 .leaderboard-content {
   max-width: 600px;
   height: 80vh;
@@ -77,7 +80,7 @@ export default {
 .score { color: #FF6B6B; font-weight: bold; }
 .loading-text { text-align: center; padding: 20px; color: #999; }
 
-/* Scrollbar locale pour la liste */
+/* Local scrollbar style for the list */
 .ranking-list::-webkit-scrollbar { width: 8px; }
 .ranking-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
 .ranking-list::-webkit-scrollbar-thumb { background: #4ECDC4; }

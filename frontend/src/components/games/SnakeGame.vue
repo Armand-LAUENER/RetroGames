@@ -12,7 +12,7 @@
 
 <script>
 export default {
-  props: ['controls'], // Reçoit 'arrows', 'zqsd', ou 'wasd'
+  props: ['controls'], // Receives 'arrows', 'zqsd', or 'wasd'
   emits: ['game-over'],
   data() { return { ctx: null, grid: 20, snake: [], apple: {}, dx: 20, dy: 0, score: 0, gameLoop: null, gameOver: false, speed: 100 } },
   mounted() {
@@ -38,7 +38,7 @@ export default {
       const code = e.code
       let move = ''
 
-      // Logique de mapping
+      // Control mapping logic
       if (this.controls === 'arrows') {
         if (code === 'ArrowLeft') move = 'left'
         if (code === 'ArrowUp') move = 'up'
@@ -56,13 +56,13 @@ export default {
         if (key === 's') move = 'down'
       }
 
-      // Application du mouvement
+      // Apply Movement (prevent reversing direction)
       if (move === 'left' && this.dx === 0) { this.dx = -this.grid; this.dy = 0 }
       if (move === 'up' && this.dy === 0) { this.dy = -this.grid; this.dx = 0 }
       if (move === 'right' && this.dx === 0) { this.dx = this.grid; this.dy = 0 }
       if (move === 'down' && this.dy === 0) { this.dy = this.grid; this.dx = 0 }
     },
-    placeApple() { /* ... code existant ... */
+    placeApple() {
       this.apple.x = Math.floor(Math.random() * (600 / this.grid)) * this.grid
       this.apple.y = Math.floor(Math.random() * (400 / this.grid)) * this.grid
     },

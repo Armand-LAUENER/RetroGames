@@ -15,7 +15,7 @@
 <script>
 export default {
   name: 'SpaceDefender',
-  props: ['controls'], // Reçoit 'arrows', 'zqsd', ou 'wasd'
+  props: ['controls'],
   emits: ['game-over'],
   data() {
     return {
@@ -42,12 +42,11 @@ export default {
     window.removeEventListener('keyup', this.keyUp)
   },
   methods: {
-    // Gestionnaire d'appui sur une touche
     keyDown(e) {
       const key = e.key.toLowerCase()
       const code = e.code
 
-      // Empêcher le scroll avec Espace ou les flèches
+      // Prevent scrolling
       if(["Space", "ArrowLeft", "ArrowRight"].includes(code)) e.preventDefault()
 
       if (this.controls === 'arrows') {
@@ -63,7 +62,6 @@ export default {
 
       if (code === 'Space') this.keys.space = true
     },
-    // Gestionnaire de relâchement d'une touche
     keyUp(e) {
       const key = e.key.toLowerCase()
       const code = e.code
@@ -91,7 +89,7 @@ export default {
       if (!this.animationId) this.loop()
     },
     spawnEnemies() {
-      // Créer une grille d'ennemis (5 rangées de 8)
+      // Create a grid of enemies
       for(let i=0; i<5; i++) {
         for(let j=0; j<8; j++) {
           this.enemies.push({
@@ -107,29 +105,26 @@ export default {
     update() {
       if (this.gameOver) return
 
-      // Mouvement Joueur
+      // Player Movement
       if (this.keys.left && this.player.x > 0) this.player.x -= this.player.speed
       if (this.keys.right && this.player.x < 560) this.player.x += this.player.speed
 
-      // Tir (Limité à un tir toutes les 300ms)
+      // Shooting (Rate limited to 300ms)
       if (this.keys.space && Date.now() - this.lastShot > 300) {
         this.bullets.push({ x: this.player.x + 18, y: this.player.y, w: 4, h: 10 })
         this.lastShot = Date.now()
       }
 
-      // Déplacement des balles
+      // Bullet Movement
       for (let i = this.bullets.length - 1; i >= 0; i--) {
         this.bullets[i].y -= 7
-        // Supprimer si hors écran
+        // Remove if off screen
         if (this.bullets[i].y < 0) {
           this.bullets.splice(i, 1)
         }
       }
 
-      // Logique simple des ennemis (vont descendre si besoin dans une version avancée)
-      // Ici, on vérifie juste les collisions
-
-      // Collisions Balle <-> Ennemi
+      // Collisions Bullet <-> Enemy
       this.bullets.forEach((b, bi) => {
         this.enemies.forEach((e) => {
           if (e.alive &&
@@ -144,48 +139,45 @@ export default {
         })
       })
 
-      // Condition de Victoire (Respawn)
+      // Win Condition (Respawn wave)
       if (this.enemies.every(e => !e.alive)) {
         this.bullets = []
         this.spawnEnemies()
       }
-
-      // Condition de Défaite (Collision Ennemi <-> Joueur non implémentée ici pour simplifier,
-      // on pourrait ajouter que si un ennemi touche le bas, c'est perdu)
     },
     draw() {
-      // Effacer l'écran
+      // Clear Screen
       this.ctx.fillStyle = 'black'
       this.ctx.fillRect(0, 0, 600, 400)
 
-      // Étoiles en fond (générées aléatoirement à chaque frame pour scintillement)
+      // Stars background
       this.ctx.fillStyle = 'white'
       for(let i=0; i<10; i++) {
         this.ctx.fillRect(Math.random()*600, Math.random()*400, 2, 2)
       }
 
-      // Joueur (Vaisseau)
+      // Player Ship
       this.ctx.fillStyle = '#FF6B6B'
       this.ctx.beginPath()
-      this.ctx.moveTo(this.player.x + 20, this.player.y) // Pointe
-      this.ctx.lineTo(this.player.x, this.player.y + 20) // Gauche
-      this.ctx.lineTo(this.player.x + 40, this.player.y + 20) // Droite
+      this.ctx.moveTo(this.player.x + 20, this.player.y)
+      this.ctx.lineTo(this.player.x, this.player.y + 20)
+      this.ctx.lineTo(this.player.x + 40, this.player.y + 20)
       this.ctx.fill()
 
-      // Balles
+      // Bullets
       this.ctx.fillStyle = '#FFFF00'
       this.bullets.forEach(b => this.ctx.fillRect(b.x, b.y, b.w, b.h))
 
-      // Ennemis (Aliens)
+      // Enemies
       this.ctx.fillStyle = '#4ECDC4'
       this.enemies.forEach(e => {
         if (e.alive) {
           this.ctx.fillRect(e.x, e.y, e.w, e.h)
-          // Yeux des aliens
+          // Eyes
           this.ctx.fillStyle = 'black'
           this.ctx.fillRect(e.x + 5, e.y + 5, 5, 5)
           this.ctx.fillRect(e.x + 20, e.y + 5, 5, 5)
-          this.ctx.fillStyle = '#4ECDC4' // Remettre la couleur pour le prochain
+          this.ctx.fillStyle = '#4ECDC4'
         }
       })
     },

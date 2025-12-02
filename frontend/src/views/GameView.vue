@@ -36,7 +36,7 @@ import PongGame from '@/components/games/PongGame.vue'
 
 export default {
   name: 'GameView',
-  props: ['gameId'], // Reçoit l'ID via le routeur (ex: 'snake')
+  props: ['gameId'],
   components: { SnakeGame, TetrisGame, SpaceDefender, PongGame },
   data() {
     return {
@@ -58,20 +58,20 @@ export default {
     }
   },
   async mounted() {
-    // 1. Récupérer les contrôles
+    // 1. Retrieve control settings
     const savedSettings = localStorage.getItem('arcade_settings')
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings)
       if (parsed.controls) this.currentControls = parsed.controls
     }
 
-    // 2. Démarrer la session
+    // 2. Start game session
     try {
       const response = await api.getProfile()
       if (response.user) {
         this.user = response.user
 
-        // --- IMPORTANT : On passe this.gameId à l'API ---
+        // Start session on the backend
         const session = await api.startGame(this.gameId)
 
         this.currentSessionId = session.sessionId
@@ -80,7 +80,7 @@ export default {
         this.goBack()
       }
     } catch (e) {
-      console.error("Erreur démarrage jeu:", e)
+      console.error("Game Start Error:", e)
       this.goBack()
     } finally {
       this.loading = false
@@ -95,9 +95,8 @@ export default {
         try {
           const duration = Math.floor((Date.now() - this.startTime) / 1000)
           await api.updateScore(this.currentSessionId, score, duration)
+          // Using standard window alert for simplicity, could be replaced by a modal
           alert(`Game Over! Score: ${score} points saved!`)
-          // Recharger les infos utilisateur après sauvegarde (optionnel)
-          // this.goBack()
         } catch (e) {
           console.error('Score save error', e)
         }

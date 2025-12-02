@@ -1,8 +1,8 @@
 <template>
   <div class="start-screen">
     <h1 class="arcade-title">
-      <span class="glitch">ARCADE</span>
-      <span class="subtitle">GAME</span>
+      <span class="glitch">Retro Games</span>
+      <span class="subtitle">Arcade</span>
     </h1>
     <button @click="$emit('start')" class="start-button pixel-button">
       START
@@ -63,7 +63,10 @@ export default {
   50% { transform: translateY(-20px); }
 }
 
+/* --- MODIFICATION ICI --- */
 .start-button {
+  width: 100%;        /* S'adapte sur mobile */
+  max-width: 250px;   /* Limite la largeur maximale (réduit la longueur) */
   animation: pulse 1.5s ease-in-out infinite;
 }
 

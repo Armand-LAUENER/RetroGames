@@ -6,13 +6,14 @@ import {
   getProfile,
   getAllUsers,
   startGame,
-  updateScore
+  updateScore,
+  getGameLeaderboard // Ajout de l'import manquant
 } from '../controllers/userController.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Validation rules
+// Validation
 const registerValidation = [
   body('email').isEmail().withMessage('Invalid email'),
   body('pseudo').isLength({ min: 3, max: 50 }).withMessage('Pseudo must be between 3 and 50 characters'),
@@ -29,6 +30,7 @@ const loginValidation = [
 router.post('/register', registerValidation, register);
 router.post('/login', loginValidation, login);
 router.get('/users', getAllUsers);
+router.get('/leaderboard/:gameId', getGameLeaderboard); // Nouvelle route pour le classement par jeu
 
 // Routes protégées
 router.get('/profile', authenticate, getProfile);

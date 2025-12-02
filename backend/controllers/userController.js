@@ -45,9 +45,8 @@ export const login = async (req, res) => {
     db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
     const token = generateToken(user.id);
 
-    // On nettoie l'objet user
     delete user.password;
-    // On normalise les champs pour le frontend (camelCase)
+    // Normalisation pour le frontend
     user.highScore = user.high_score;
     user.gamesPlayed = user.games_played;
 
@@ -68,11 +67,11 @@ export const getProfile = async (req, res) => {
   }
 };
 
-// Démarrer une partie (Avec Game ID)
+// Démarrer une partie
 export const startGame = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { gameId } = req.body; // ex: 'snake', 'tetris'
+    const { gameId } = req.body;
 
     if (!gameId) return res.status(400).json({ message: 'Game ID required' });
 
@@ -86,26 +85,24 @@ export const startGame = async (req, res) => {
   }
 };
 
-// Enregistrer le score (Logique Multi-Jeux)
+// Enregistrer le score
 export const updateScore = async (req, res) => {
   try {
     const userId = req.user.id;
     const { sessionId, score, duration } = req.body;
 
-    // 1. Récupérer le jeu concerné
     const session = db.prepare('SELECT game_id FROM game_sessions WHERE id = ?').get(sessionId);
     if (!session) return res.status(404).json({ message: 'Session introuvable' });
     const gameId = session.game_id;
 
-    // 2. Mettre à jour la session
     db.prepare('UPDATE game_sessions SET score = ?, duration = ? WHERE id = ?').run(score, duration, sessionId);
 
-    // 3. Mettre à jour le score SPÉCIFIQUE au jeu (user_scores)
-    // UPSERT : Insère si nouveau, Met à jour si le score est meilleur
+    // Upsert du meilleur score par jeu
     const currentBest = db.prepare('SELECT best_score FROM user_scores WHERE user_id = ? AND game_id = ?').get(userId, gameId);
     const oldScore = currentBest ? currentBest.best_score : 0;
 
-    if (score > oldScore) {
+    // Si nouveau score >= ancien (permet d'enregistrer un 0 initial)
+    if (!currentBest || score >= oldScore) {
       db.prepare(`
         INSERT INTO user_scores (user_id, game_id, best_score, updated_at) 
         VALUES (?, ?, ?, CURRENT_TIMESTAMP)
@@ -115,11 +112,10 @@ export const updateScore = async (req, res) => {
       `).run(userId, gameId, score);
     }
 
-    // 4. Recalculer le score GLOBAL (Somme de tous les meilleurs scores)
+    // Mise à jour score global
     const globalStats = db.prepare('SELECT SUM(best_score) as total FROM user_scores WHERE user_id = ?').get(userId);
     const newGlobalScore = globalStats.total || 0;
 
-    // 5. Mettre à jour l'utilisateur global
     db.prepare('UPDATE users SET games_played = games_played + 1, high_score = ? WHERE id = ?')
       .run(newGlobalScore, userId);
 
@@ -149,7 +145,7 @@ export const getGameLeaderboard = async (req, res) => {
   }
 };
 
-// Leaderboard Global (Tous les utilisateurs)
+// Leaderboard Global (C'est cette fonction qui manquait à l'export !)
 export const getAllUsers = async (req, res) => {
   try {
     const users = db.prepare(`

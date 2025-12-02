@@ -58,19 +58,6 @@ export function initDatabase() {
     );
   `);
 
-  // 4. Table Stats Globales
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS user_stats (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER UNIQUE NOT NULL,
-      total_playtime INTEGER DEFAULT 0,
-      average_score REAL DEFAULT 0,
-      best_streak INTEGER DEFAULT 0,
-      achievements TEXT DEFAULT '[]',
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
-  `);
-
   // MIGRATION DE SECOURS :
   // Si la table game_sessions existe déjà mais sans la colonne game_id, on l'ajoute.
   try {

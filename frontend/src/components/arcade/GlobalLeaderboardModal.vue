@@ -1,6 +1,6 @@
 <template>
   <div class="modal-overlay" @click="$emit('close')">
-    <div class="modal-content pixel-border" @click.stop>
+    <div class="modal-content leaderboard-content pixel-border" @click.stop>
       <button class="modal-close" @click="$emit('close')">✕</button>
       <h3 class="modal-title">🏆 GLOBAL RANKING</h3>
 
@@ -30,48 +30,36 @@
 </template>
 
 <script>
+/* (Le script reste identique) */
 import api from '../../services/api.js'
 
 export default {
   name: 'GlobalLeaderboardModal',
   props: ['currentUser'],
   emits: ['close'],
-  data() {
-    return {
-      players: [],
-      loading: true
-    }
-  },
+  data() { return { players: [], loading: true } },
   async mounted() {
     try {
       const response = await api.getAllUsers()
-      if (response.users) {
-        this.players = response.users
-      }
-    } catch (e) {
-      console.error(e)
-    } finally {
-      this.loading = false
-    }
+      if (response.users) this.players = response.users
+    } catch (e) { console.error(e) } finally { this.loading = false }
   },
   methods: {
     formatScore(val) { return (val || 0).toLocaleString('fr-FR') },
-    getRankClass(i) {
-      if (i === 0) return 'gold'
-      if (i === 1) return 'silver'
-      if (i === 2) return 'bronze'
-      return ''
-    },
+    getRankClass(i) { if (i === 0) return 'gold'; if (i === 1) return 'silver'; if (i === 2) return 'bronze'; return '' },
     isMe(p) { return this.currentUser && p.id === this.currentUser.id }
   }
 }
 </script>
 
 <style scoped>
-.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(5px); }
-.modal-content { background: rgba(22, 33, 62, 0.98); padding: 30px; width: 90%; max-width: 600px; height: 80vh; display: flex; flex-direction: column; color: white; position: relative; }
-.modal-close { position: absolute; top: 15px; right: 15px; background: #FF6B6B; border: 3px solid #000; color: white; width: 40px; height: 40px; cursor: pointer; font-family: inherit; }
-.modal-title { text-align: center; color: #FFE66D; margin-bottom: 20px; font-size: 1.5rem; text-shadow: 3px 3px 0 #000; }
+/* Surcharge spécifique pour le leaderboard (plus large) */
+.leaderboard-content {
+  max-width: 600px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
 
 .leaderboard-container { flex: 1; overflow: hidden; display: flex; flex-direction: column; border: 2px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); }
 .table-header { display: flex; justify-content: space-between; color: #95E1D3; border-bottom: 2px solid white; padding: 15px 10px; font-size: 0.7rem; background: rgba(0,0,0,0.5); }
@@ -89,7 +77,7 @@ export default {
 .score { color: #FF6B6B; font-weight: bold; }
 .loading-text { text-align: center; padding: 20px; color: #999; }
 
-/* Scrollbar */
+/* Scrollbar locale pour la liste */
 .ranking-list::-webkit-scrollbar { width: 8px; }
 .ranking-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
 .ranking-list::-webkit-scrollbar-thumb { background: #4ECDC4; }

@@ -107,18 +107,63 @@ export default {
     }
   },
   async mounted() {
-    await this.loadAccounts()
+    await this.loadAccounts() // Charge depuis le LocalStorage
     await this.checkAutoLogin()
+
     const savedSettings = localStorage.getItem('arcade_settings')
-    if (savedSettings) { this.settings = JSON.parse(savedSettings) }
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings)
+        this.settings = { ...this.settings, ...parsed }
+      } catch (e) {
+        console.error("Erreur chargement settings", e)
+      }
+    }
   },
   methods: {
+    // --- CHANGEMENT 1 : Charger les comptes depuis le navigateur uniquement ---
+    loadAccounts() {
+      try {
+        const stored = localStorage.getItem('arcade_known_accounts');
+        if (stored) {
+          this.accounts = JSON.parse(stored);
+        } else {
+          this.accounts = [];
+        }
+      } catch (error) {
+        console.error('Erreur lecture localStorage:', error);
+        this.accounts = [];
+      }
+    },
+
+    // --- CHANGEMENT 2 : Sauvegarder un compte localement après connexion ---
+    rememberAccount(user) {
+      // 1. Récupérer la liste actuelle
+      let known = this.accounts;
+
+      // 2. Vérifier si l'utilisateur est déjà dedans (pour le mettre à jour)
+      const index = known.findIndex(u => u.id === user.id);
+
+      if (index !== -1) {
+        // Mise à jour des infos (score, etc.)
+        known[index] = user;
+      } else {
+        // Ajout nouveau
+        known.push(user);
+      }
+
+      // 3. Mettre à jour l'état et le LocalStorage
+      this.accounts = known;
+      localStorage.setItem('arcade_known_accounts', JSON.stringify(known));
+    },
+
     selectAccount(account) {
       this.selectedAccount = account
       this.loginError = ''
       this.currentScreen = 'password'
       this.playSound()
     },
+
     async handleUnlock(password) {
       this.loginError = ''
       try {
@@ -128,6 +173,7 @@ export default {
         })
         if (response.user) {
           this.currentUser = response.user
+          this.rememberAccount(this.currentUser) // Mise à jour des infos locales
           this.currentScreen = 'main'
           this.playSound()
         }
@@ -135,8 +181,10 @@ export default {
         this.loginError = 'INVALID PASSWORD'
       }
     },
+
     async openGlobalStats() {
       try {
+        // Pour le classement, on continue de charger TOUT le monde depuis l'API, c'est normal
         const response = await api.getAllUsers()
         if (response.users) {
           this.globalPlayers = response.users
@@ -146,51 +194,93 @@ export default {
         console.error("Impossible de charger le classement global", e)
       }
     },
+
     updateSettings(newSettings) {
       this.settings = newSettings
       localStorage.setItem('arcade_settings', JSON.stringify(newSettings))
     },
-    goToLogin() { this.currentScreen = 'login'; this.playSound() },
-    async loadAccounts() {
-      try { const response = await api.getAllUsers(); this.accounts = response.users; }
-      catch (error) { console.error(error) }
+
+    goToLogin() {
+      this.loadAccounts(); // Rafraîchir la liste locale
+      this.currentScreen = 'login';
+      this.playSound()
     },
+
     async checkAutoLogin() {
-      try { const response = await api.getProfile(); if (response.user) { this.currentUser = response.user; this.currentScreen = 'main' } }
+      try {
+        const response = await api.getProfile();
+        if (response.user) {
+          this.currentUser = response.user;
+          this.rememberAccount(this.currentUser); // On se souvient de lui
+          this.currentScreen = 'main'
+        }
+      }
       catch (error) { api.clearToken() }
     },
+
     closeCreateForm() { this.showCreateForm = false; this.createError = '' },
     closeLoginForm() { this.showLoginForm = false; this.loginError = '' },
+
     async createAccount(data) {
        try {
         const response = await api.register({ email: data.email, pseudo: data.pseudo, password: data.password, color: this.colors[Math.floor(Math.random() * this.colors.length)] })
-        if (response.user) { this.currentUser = response.user; this.closeCreateForm(); this.currentScreen = 'main'; this.playSound(); await this.loadAccounts() }
+        if (response.user) {
+          this.currentUser = response.user;
+          this.rememberAccount(this.currentUser); // SAUVEGARDE LOCALE ICI
+          this.closeCreateForm();
+          this.currentScreen = 'main';
+          this.playSound();
+        }
       } catch (error) { this.createError = error.message || 'Failed' }
     },
+
     async loginWithPassword(data) {
       try {
         const response = await api.login({ pseudo: data.pseudo, password: data.password })
-        if (response.user) { this.currentUser = response.user; this.closeLoginForm(); this.currentScreen = 'main'; this.playSound() }
+        if (response.user) {
+          this.currentUser = response.user;
+          this.rememberAccount(this.currentUser); // SAUVEGARDE LOCALE ICI
+          this.closeLoginForm();
+          this.currentScreen = 'main';
+          this.playSound()
+        }
       } catch (error) { this.loginError = error.message || 'Invalid credentials' }
     },
+
     logout() {
-      if (confirm(`Logout from ${this.currentUser.pseudo}?`)) { api.logout(); this.currentUser = null; this.currentScreen = 'start'; this.playSound() }
+      if (confirm(`Logout from ${this.currentUser.pseudo}?`)) {
+        api.logout();
+        this.currentUser = null;
+        this.currentScreen = 'start';
+        this.playSound()
+      }
     },
+
     async startGame() {
-      try { await api.startGame(); this.$router.push('/games'); this.playSound() } catch (error) { console.error(error) }
+      try {
+        await api.startGame()
+        this.$router.push('/games')
+        this.playSound()
+      } catch (error) { console.error(error) }
     },
+
     playSound() {
       try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-        const oscillator = audioContext.createOscillator()
-        const gainNode = audioContext.createGain()
-        oscillator.connect(gainNode)
-        gainNode.connect(audioContext.destination)
-        oscillator.frequency.value = 800
-        oscillator.type = 'square'
-        gainNode.gain.value = 0.1
-        oscillator.start()
-        oscillator.stop(audioContext.currentTime + 0.1)
+        const AudioContext = window.AudioContext || window.webkitAudioContext
+        if (!AudioContext) return
+        const ctx = new AudioContext()
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.type = 'sine'
+        const now = ctx.currentTime
+        osc.frequency.setValueAtTime(800, now)
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.08)
+        gain.gain.setValueAtTime(0.15, now)
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08)
+        osc.start()
+        osc.stop(now + 0.08)
       } catch (e) {}
     }
   }
@@ -198,6 +288,7 @@ export default {
 </script>
 
 <style scoped>
+/* Les styles restent identiques, gérés globalement */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 .arcade-container { min-height: 100vh; font-family: 'Press Start 2P', cursive; color: white; position: relative; overflow: hidden; background: transparent; --scan-width: 2px; --scan-color: rgba(0, 0, 0, 0.35); --scan-opacity: 0.8; --scan-fps: 60; --scan-z-index: 9999; }
 @keyframes scanline-move { 0% { transform: translate3d(0, 500vh, 0); } 100% { transform: translate3d(0, -500vh, 0); } }

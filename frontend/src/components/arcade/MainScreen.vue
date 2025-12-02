@@ -170,7 +170,7 @@ export default {
     getRankClass(i) { if(i===0)return 'gold'; if(i===1)return 'silver'; if(i===2)return 'bronze'; return '' },
     async selectGame(id) {
       this.selectedGameId = id
-      this.playSound()
+      // Le son est géré par le watcher de touche ou le clic, pas besoin de l'appeler ici pour éviter le doublon au montage
       this.loadingLeaderboard = true
       this.leaderboardData = []
       try {
@@ -181,31 +181,66 @@ export default {
     handlePlay() {
       this.$router.push({ name: 'Game', params: { gameId: this.selectedGameId } })
     },
+
+    // --- GESTION DES TOUCHES CORRIGÉE ---
     handleKeydown(e) {
-      const controls = this.settings.controls
+      const controls = this.settings?.controls || 'arrows'
+      const key = e.key.toLowerCase()
+      const code = e.code
       let action = null
-      if (controls === 'arrows') { if (e.key === 'ArrowUp') action = 'up'; if (e.key === 'ArrowDown') action = 'down'; if (e.key === 'Enter') action = 'select' }
-      else if (controls === 'zqsd') { if (e.key === 'z') action = 'up'; if (e.key === 's') action = 'down'; if (e.key === 'Enter' || e.key === ' ') action = 'select' }
-      else if (controls === 'wasd') { if (e.key === 'w') action = 'up'; if (e.key === 's') action = 'down'; if (e.key === 'Enter' || e.key === ' ') action = 'select' }
-      if (action === 'up') this.navigateWheel(-1)
-      if (action === 'down') this.navigateWheel(1)
+
+      // Bloquer le scroll natif pour les flèches
+      if(["ArrowUp","ArrowDown"].includes(code)) e.preventDefault()
+
+      if (controls === 'arrows') {
+        if (code === 'ArrowUp') action = 'up'
+        if (code === 'ArrowDown') action = 'down'
+        if (key === 'enter') action = 'select'
+      }
+      else if (controls === 'zqsd') {
+        if (key === 'z') action = 'up'
+        if (key === 's') action = 'down'
+        if (key === 'enter' || key === ' ') action = 'select'
+      }
+      else if (controls === 'wasd') {
+        if (key === 'w') action = 'up'
+        if (key === 's') action = 'down'
+        if (key === 'enter' || key === ' ') action = 'select'
+      }
+
+      if (action === 'up') {
+        this.navigateWheel(-1)
+        // Petit son via le parent (optionnel si vous voulez un son au défilement)
+        // this.$parent.playSound()
+      }
+      if (action === 'down') {
+        this.navigateWheel(1)
+        // this.$parent.playSound()
+      }
       if (action === 'select') this.handlePlay()
     },
+
     navigateWheel(direction) {
       const currentIndex = this.games.findIndex(g => g.id === this.selectedGameId)
       let newIndex = currentIndex + direction
       if (newIndex < 0) newIndex = this.games.length - 1
       if (newIndex >= this.games.length) newIndex = 0
       this.selectGame(this.games[newIndex].id)
-    },
-    playSound() { /* ... */ }
+
+      // Faire défiler visuellement
+      this.$nextTick(() => {
+        const el = this.$refs['gameItem-' + newIndex]
+        if (el && el[0]) el[0].scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+    }
   }
 }
 </script>
 
 <style scoped>
-/* CSS Ajusté */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+/* Les styles sont maintenant gérés globalement via arcade-styles.css pour la structure commune */
+/* On garde ici seulement la mise en page spécifique au Hub */
+
 .main-screen { height: 100vh; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
 .hub-header { display: flex; justify-content: space-between; align-items: center; height: 80px; margin-bottom: 20px; }
 .player-badge { display: flex; align-items: center; gap: 15px; background: rgba(0, 0, 0, 0.6); padding: 10px 20px; border-radius: 4px; }
@@ -222,12 +257,12 @@ export default {
 /* ROUE STYLISÉE */
 .game-wheel-container {
   flex: 0 0 300px; display: flex; flex-direction: column;
-  background: rgba(22, 33, 62, 0.9); backdrop-filter: blur(10px); padding: 20px; /* Ajout du fond et padding */
+  background: rgba(22, 33, 62, 0.9); backdrop-filter: blur(10px); padding: 20px;
 }
 .wheel-title { text-align: center; color: #95E1D3; margin-bottom: 10px; font-size: 0.8rem; text-shadow: 2px 2px 0 #000; }
 .game-wheel {
   flex: 1; display: flex; flex-direction: column; gap: 15px;
-  padding: 25px 30px; /* Padding augmenté pour laisser place au zoom */
+  padding: 25px 30px;
   overflow-y: auto; overflow-x: hidden;
   scrollbar-width: thin; scrollbar-color: #FFE66D rgba(0,0,0,0.3);
 }
@@ -238,7 +273,7 @@ export default {
 .game-item:hover { opacity: 0.8; transform: scale(0.98); }
 .game-item.active {
   opacity: 1; background: rgba(255, 255, 255, 0.15); border-color: #FFE66D;
-  transform: scale(1.02) translateX(5px); /* Zoom réduit pour éviter débordement */
+  transform: scale(1.02) translateX(5px);
   z-index: 2; box-shadow: -5px 5px 0 rgba(0,0,0,0.5);
 }
 .game-icon { font-size: 1.5rem; }

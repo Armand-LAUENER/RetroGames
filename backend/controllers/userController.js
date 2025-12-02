@@ -20,7 +20,6 @@ export const register = async (req, res) => {
 
     // Init stats
     const userId = result.lastInsertRowid;
-    db.prepare('INSERT INTO user_stats (user_id) VALUES (?)').run(userId);
 
     const token = generateToken(userId);
     res.status(201).json({

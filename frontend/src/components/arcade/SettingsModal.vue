@@ -42,13 +42,11 @@
 </template>
 
 <script>
+/* (Le script reste identique à l'original) */
 export default {
   name: 'SettingsModal',
   props: {
-    currentSettings: {
-      type: Object,
-      required: true
-    }
+    currentSettings: { type: Object, required: true }
   },
   emits: ['close', 'update-settings'],
   data() {
@@ -78,29 +76,7 @@ export default {
 </script>
 
 <style scoped>
-/* Réutilisation des styles de base de vos autres modales */
-.modal-overlay {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 2000; backdrop-filter: blur(5px);
-}
-.modal-content {
-  background: rgba(22, 33, 62, 0.95);
-  padding: 40px; width: 100%; max-width: 500px;
-  position: relative; color: white;
-}
-.modal-title {
-  text-align: center; color: #FFE66D; margin-bottom: 30px;
-  text-shadow: 3px 3px 0 rgba(0,0,0,0.5);
-}
-.modal-close {
-  position: absolute; top: 15px; right: 15px;
-  background: #FF6B6B; border: 3px solid #000; color: white;
-  width: 40px; height: 40px; cursor: pointer; font-family: inherit;
-}
-
-/* Styles spécifiques Settings */
+/* Styles spécifiques Settings seulement */
 .setting-group { margin-bottom: 30px; }
 .setting-group label {
   display: block; color: #95E1D3; margin-bottom: 15px; font-size: 0.8rem;

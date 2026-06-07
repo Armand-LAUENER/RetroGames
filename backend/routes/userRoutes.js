@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { body } from 'express-validator';
 import {
   register,
@@ -12,6 +13,14 @@ import {
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { message: 'Too many attempts, please try again in 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Validation Rules
 const registerValidation = [
@@ -27,8 +36,8 @@ const loginValidation = [
 ];
 
 // Public Routes
-router.post('/register', registerValidation, register);
-router.post('/login', loginValidation, login);
+router.post('/register', authLimiter, registerValidation, register);
+router.post('/login', authLimiter, loginValidation, login);
 router.get('/users', getAllUsers);
 router.get('/leaderboard/:gameId', getGameLeaderboard);
 

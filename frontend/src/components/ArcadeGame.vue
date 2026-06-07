@@ -255,14 +255,6 @@ export default {
       }
     },
 
-    async startGame() {
-      try {
-        await api.startGame()
-        this.$router.push('/games')
-        this.playSound()
-      } catch (error) { console.error(error) }
-    },
-
     /**
      * Plays a simple UI sound effect using the Web Audio API
      */

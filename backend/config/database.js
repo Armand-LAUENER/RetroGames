@@ -8,8 +8,7 @@ const __dirname = path.dirname(__filename);
 // Path to the SQLite database file
 const dbPath = path.join(__dirname, '..', 'arcade_game.db');
 
-// Initialize the database with verbose logging for debugging purposes
-const db = new Database(dbPath, { verbose: console.log });
+const db = new Database(dbPath);
 
 // Enable foreign key constraints enforcement
 db.pragma('foreign_keys = ON');

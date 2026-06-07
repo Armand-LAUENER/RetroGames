@@ -1,3 +1,11 @@
+# Environment & secrets
+backend/.env
+*.env
+
+# Database files
+*.db
+*.sqlite
+
 # Logs
 logs
 *.log

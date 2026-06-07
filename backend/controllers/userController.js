@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { validationResult } from 'express-validator';
 import db from '../config/database.js';
 
 /**
@@ -16,6 +17,9 @@ const generateToken = (userId) => {
  * Handles password hashing and initial user creation.
  */
 export const register = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ message: errors.array()[0].msg });
+
   try {
     const { email, pseudo, password, color } = req.body;
 
@@ -46,6 +50,9 @@ export const register = async (req, res) => {
  * Verifies credentials and updates last login timestamp.
  */
 export const login = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ message: errors.array()[0].msg });
+
   try {
     const { pseudo, password } = req.body;
     const user = db.prepare('SELECT * FROM users WHERE pseudo = ?').get(pseudo);
@@ -124,8 +131,8 @@ export const updateScore = async (req, res) => {
     const currentBest = db.prepare('SELECT best_score FROM user_scores WHERE user_id = ? AND game_id = ?').get(userId, gameId);
     const oldScore = currentBest ? currentBest.best_score : 0;
 
-    // Upsert logic: Update only if the new score is higher
-    if (!currentBest || score >= oldScore) {
+    // Upsert logic: Update only if the new score is strictly higher
+    if (!currentBest || score > oldScore) {
       db.prepare(`
         INSERT INTO user_scores (user_id, game_id, best_score, updated_at) 
         VALUES (?, ?, ?, CURRENT_TIMESTAMP)
